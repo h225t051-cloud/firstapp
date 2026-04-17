@@ -37,8 +37,8 @@
         </div>
 
         <div class="mt-8 bg-gray-800 border-2 border-gray-600 p-4 rounded text-sm text-gray-400">
-            <p class="mb-1"><span class="text-yellow-400">1P操作:</span> [WASD] 移動・ジャンプ | <span class="text-red-400 font-bold">[G]</span> パンチ | <span class="text-red-400 font-bold">[H]</span> 必殺技(MP消費)</p>
-            <p><span class="text-yellow-400">2P操作:</span> [矢印キー] 移動・ジャンプ | <span class="text-blue-400 font-bold">[ , ] (読点)</span> パンチ | <span class="text-blue-400 font-bold">[ . ] (句点)</span> 必殺技(MP消費)</p>
+            <p class="mb-1"><span class="text-yellow-400">1P操作:</span> [WASD] 移動・ジャンプ | <span class="text-green-400 font-bold">[S]</span> ガード | <span class="text-red-400 font-bold">[G]</span> パンチ | <span class="text-red-400 font-bold">[H]</span> 必殺技(MP消費)</p>
+            <p><span class="text-yellow-400">2P操作:</span> [矢印キー] 移動・ジャンプ | <span class="text-green-400 font-bold">[↓]</span> ガード | <span class="text-blue-400 font-bold">[ , ]</span> パンチ | <span class="text-blue-400 font-bold">[ . ]</span> 必殺技(MP消費)</p>
         </div>
     </div>
 
@@ -100,14 +100,14 @@
         const gravity = 0.8;
         const groundLevel = canvas.height - 50;
 
-        // カラーパレット拡張 (新キャラ用の色追加)
+        // カラーパレット拡張
         const palette = {
             'K': '#000000', 'W': '#ffffff', 'R': '#ef4444', 'G': '#22c55e', 
             'B': '#3b82f6', 'Y': '#eab308', 'P': '#a855f7', 'S': '#fcd34d', 
             'C': '#92400e', 'D': '#78350f', 'M': '#9ca3af', 'O': '#b91c1c',
             'F': '#f97316', 'V': '#f472b6', 'E': '#fbcfe8',
             'I': '#38bdf8', 'U': '#0284c7', 'X': '#fdf2f8', 'Z': '#f472b6', '1': '#be185d', 
-            'J': '#be123c', 'H': '#fde047', 'N': '#fed7aa'
+            'J': '#be123c', 'H': '#fde047', 'N': '#fed7aa', 'A': '#4ade80', 'T': '#bae6fd'
         };
 
         const sprites = {
@@ -120,50 +120,64 @@
             raijin: ["_Y________Y_","__Y__YY__Y__","____KWWK____","___KYWYYK___","___KYYYYK___","___KKKKKK___","__MMMMMMMM__","__MMKMMKMM__","_KKMMMMMMKK_","___K____K___","___K____K___","__KK____KK__"],
             fujin: ["_G________G_","__G__GG__G__","____KWWK____","___KGWGGK___","___KGGGGK___","___KKKKKK___","__CCCCMMCC__","__CMCCMCCM__","_KKCCCCCCKK_","___M____M___","___M____M___","__MM____MM__"],
             pig: ["____EEEE____","___EEEEEE___","__EWWEWWE___","__EEEEEEEE__","___EEEEEE___","__WWWWWWWW__","__WWWWWWWW__","__WWWWWWWW__","___EE__EE___","___E____E___","___E____E___","__EE____EE__"],
-            // 描き直した九尾の狐 (白・ピンク基調で美しく)
-            fox: [
-                "XX__XXXX__XX",
-                "XXX_XXXX_XXX",
-                "XXX_X11X_XXX",
-                "XXXX_ZZ_XXXX",
-                "XX_XXZZXX_XX",
-                "_X_XXXXXX_X_",
-                "_X_XXXXXX_X_",
-                "___X_XX_X___",
-                "__XX_XX_XX__",
-                "__X__XX__X__",
-                "_____XX_____",
-                "_____XX_____"
-            ],
-            // 新キャラ: 青龍
+            fox: ["XX__XXXX__XX","XXX_XXXX_XXX","XXX_X11X_XXX","XXXX_ZZ_XXXX","XX_XXZZXX_XX","_X_XXXXXX_X_","_X_XXXXXX_X_","___X_XX_X___","__XX_XX_XX__","__X__XX__X__","_____XX_____","_____XX_____"],
+            zashiki: ["____KKKK____","___KKKKKK___","___KNK1NK___","___KNNNNK___","____JJJJ____","___JJHJJJ___","___J_JJ_J___","___J_JJ_J___","____NNNN____","____NNNN____","____N__N____","____K__K____"],
             seiryu: [
-                "____I__I____",
-                "___IUUIUI___",
-                "___IWWII____",
-                "__IIIIII____",
-                "__II_III____",
-                "__I__II_I___",
-                "____IIIII___",
-                "___II_III___",
-                "__II___II___",
-                "__II___II___",
-                "__I_____I___",
-                "_II_____II__"
+                "___________I__I______",
+                "__________IUIUUI_____",
+                "__________IIWWII_____",
+                "_II___II___IIIIII____",
+                "_III_IIII_IIII_II____",
+                "_I_IIII_III_II__I____",
+                "___IIII_IIIIIII______",
+                "___II_III_III_II_____",
+                "__II___II_II___II____",
+                "__II___II_II___II____",
+                "__I_____I_I_____I____",
+                "__I______II_____II___"
             ],
-            // 新キャラ: 座敷童子
-            zashiki: [
-                "____KKKK____",
-                "___KKKKKK___",
-                "___KNK1NK___",
-                "___KNNNNK___",
-                "____JJJJ____",
-                "___JJHJJJ___",
-                "___J_JJ_J___",
-                "___J_JJ_J___",
-                "____NNNN____",
-                "____NNNN____",
-                "____N__N____",
-                "____K__K____"
+            orochi: [
+                "__A_A___A_A___A_A__",
+                "__AKA___AKA___AKA__",
+                "__AAA___AAA___AAA__",
+                "___A_____A_____A___",
+                "___A_____A_____A___",
+                "___AAAAAAAAAAAAA___",
+                "____AAAAAAAAAAA____",
+                "____AAAAAAAAAAA____",
+                "_____AAAAAAAAA_____",
+                "_____AAAAAAAAA_____",
+                "______AAAAAAA______",
+                "_______AAAAA_______"
+            ],
+            yuki: [
+                "____TTTT____",
+                "___TTTTTT___",
+                "___TWWTTT___",
+                "___TTTTTT___",
+                "____TTTT____",
+                "___WWWWWW___",
+                "__WWWWWWWW__",
+                "__W_WWWW_W__",
+                "____WWWW____",
+                "____WWWW____",
+                "____WWWW____",
+                "____WWWW____"
+            ],
+            // 新キャラ: 哪吒 (お団子頭、風火輪)
+            nezha: [
+                "__R______R__",
+                "__KR_KK_RK__",
+                "___KWKKWK___",
+                "___KWWWWK___",
+                "___KYYYYK___",
+                "__K_YYYY_K__",
+                "__K_YYYY_K__",
+                "____YYYY____",
+                "___YY__YY___",
+                "___Y____Y___",
+                "__FFF__FFF__",
+                "__FFF__FFF__"
             ]
         };
 
@@ -187,27 +201,28 @@
         let selectState = 1;
 
         const keys = { 
-            a: false, d: false, w: false, 
-            ArrowLeft: false, ArrowRight: false, ArrowUp: false 
+            a: false, d: false, w: false, s: false,
+            ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false
         };
 
-        // gravityScale, width, height, spriteScale などの個別プロパティを追加
         const characterData = {
             'tengu': { name: '天狗', color: '#ef4444', speed: 7, jump: -20, health: 100, attackDamage: 8, spCost: 30, spType: 'tornado', desc: '空中戦が得意。竜巻を放つ。', sprite: sprites.tengu },
-            'oni': { name: '鬼', color: '#b91c1c', speed: 4, jump: -14, health: 100, attackDamage: 15, spCost: 40, spType: 'wave', desc: '圧倒的パワー。衝撃波を放つ。', sprite: sprites.oni },
-            'raijin': { name: '雷神', color: '#eab308', speed: 5, jump: -18, health: 100, attackDamage: 10, spCost: 70, spType: 'thunder', desc: 'MP大消費。広範囲の雷で相手を麻痺させる。', sprite: sprites.raijin },
-            'fujin': { name: '風神', color: '#22c55e', speed: 8, jump: -19, health: 100, attackDamage: 10, spCost: 60, spType: 'wind_blast', desc: 'MP大消費。近距離に大ダメージの神風を放つ。', sprite: sprites.fujin },
-            'fox': { name: '九尾の狐', color: '#f472b6', speed: 12, jump: -18, health: 70, attackDamage: 18, spCost: 35, spType: 'fireball', desc: '超速・高火力だがHPが低い。火球を放つ。', sprite: sprites.fox },
-            'pig': { name: '猪八戒', color: '#fbcfe8', speed: 4, jump: -12, health: 160, attackDamage: 12, spCost: 30, spType: 'earth', desc: 'HPが非常に高い。岩を放物線状に投げる。', sprite: sprites.pig },
-            'vampire': { name: '吸血鬼', color: '#7e22ce', speed: 6, jump: -16, health: 100, attackDamage: 10, spCost: 35, spType: 'bat', desc: '攻撃ヒット時に少しHPを吸収する。', sprite: sprites.vampire },
-            'werewolf': { name: '人狼', color: '#92400e', speed: 10, jump: -15, health: 100, attackDamage: 12, spCost: 20, spType: 'claw', desc: '超スピード。前方に鋭い爪の連撃。', sprite: sprites.werewolf },
+            'oni': { name: '鬼', color: '#b91c1c', speed: 4, jump: -14, health: 100, attackDamage: 15, spCost: 40, spType: 'wave', desc: 'パワー型。衝撃波を放つ。', sprite: sprites.oni },
+            'raijin': { name: '雷神', color: '#eab308', speed: 5, jump: -18, health: 100, attackDamage: 10, spCost: 70, spType: 'thunder', desc: '広範囲の雷で相手を麻痺させる。', sprite: sprites.raijin },
+            'fujin': { name: '風神', color: '#22c55e', speed: 8, jump: -19, health: 100, attackDamage: 10, spCost: 60, spType: 'wind_blast', desc: '近距離に大ダメージの神風を放つ。', sprite: sprites.fujin },
+            'fox': { name: '九尾の狐', color: '#f472b6', speed: 12, jump: -18, health: 70, attackDamage: 14, spCost: 35, spType: 'fox_fire', desc: '超速・近接特化。目の前を焼き尽くす。', sprite: sprites.fox },
+            'pig': { name: '猪八戒', color: '#fbcfe8', speed: 4, jump: -12, health: 160, attackDamage: 12, spCost: 30, spType: 'rake', desc: 'HPが非常に高い。巨大な釘鈀で薙ぎ払う。', sprite: sprites.pig },
+            'seiryu': { name: '青龍', color: '#0ea5e9', speed: 14, jump: -3.5, health: 100, attackDamage: 11, spCost: 40, spType: 'dragon_beam', desc: '画面中央まで飛び、長く滞空する。', sprite: sprites.seiryu, gravityScale: 0.03, width: 120, spriteScale: 6 },
+            'zashiki': { name: '座敷童子', color: '#be123c', speed: 6, jump: -15, health: 90, attackDamage: 9, spCost: 25, spType: 'flower', desc: '小柄で攻撃が当たりにくい。', sprite: sprites.zashiki, width: 45, height: 80, spriteScale: 8 },
+            'orochi': { name: '八岐大蛇', color: '#4ade80', speed: 3, jump: -10, health: 140, attackDamage: 14, spCost: 40, spType: 'poison_breath', desc: '巨体でリーチが長い。毒霧を吐く。', sprite: sprites.orochi, width: 100, spriteScale: 6 },
+            'yuki': { name: '雪女', color: '#bae6fd', speed: 7, jump: -7, health: 90, attackDamage: 8, spCost: 50, spType: 'blizzard', desc: 'フワフワ浮く。相手を凍らせる吹雪。', sprite: sprites.yuki, gravityScale: 0.3 },
+            'vampire': { name: '吸血鬼', color: '#7e22ce', speed: 6, jump: -16, health: 100, attackDamage: 10, spCost: 35, spType: 'bat', desc: '滞空力が高い。攻撃ヒット時HP吸収。', sprite: sprites.vampire, gravityScale: 0.66 },
+            'werewolf': { name: '人狼', color: '#92400e', speed: 10, jump: -15, health: 100, attackDamage: 12, spCost: 20, spType: 'claw', desc: '超スピード。前方に突進しながら爪で引き裂く。', sprite: sprites.werewolf },
+            'nezha': { name: '哪吒', color: '#ef4444', speed: 10, jump: -16, health: 100, attackDamage: 11, spCost: 35, spType: 'spear_dash', desc: '炎と槍を操る。高速で前方に突進する。', sprite: sprites.nezha },
             'wukong': { name: '孫悟空', color: '#eab308', speed: 8, jump: -18, health: 100, attackDamage: 9, spCost: 30, spType: 'pole', desc: '通常リーチ長め。如意棒を伸ばす。', sprite: sprites.wukong },
-            'kappa': { name: '河童', color: '#22c55e', speed: 6, jump: -16, health: 100, attackDamage: 8, spCost: 15, spType: 'water', desc: '燃費が良く、水球を連射可能。', sprite: sprites.kappa },
-            'seiryu': { name: '青龍', color: '#0ea5e9', speed: 9, jump: -22, health: 100, attackDamage: 11, spCost: 40, spType: 'dragon_beam', desc: '滞空時間が非常に長い。空中から水龍波。', sprite: sprites.seiryu, gravityScale: 0.4 },
-            'zashiki': { name: '座敷童子', color: '#be123c', speed: 6, jump: -15, health: 90, attackDamage: 9, spCost: 25, spType: 'flower', desc: '小柄で攻撃が当たりにくい。可愛い花吹雪。', sprite: sprites.zashiki, width: 45, height: 80, spriteScale: 8 }
+            'kappa': { name: '河童', color: '#22c55e', speed: 6, jump: -16, health: 100, attackDamage: 8, spCost: 15, spType: 'water', desc: '燃費が良く、水球を連射可能。', sprite: sprites.kappa }
         };
 
-        // モード選択
         function selectMode(mode) {
             gameMode = mode;
             document.getElementById('title-screen').classList.add('hidden');
@@ -236,7 +251,6 @@
                     case 'tornado': this.width = 70; this.height = 140; this.position.y = this.owner.position.y - 20; this.damage = 15; break;
                     case 'wave': this.width = 30; this.height = 80; this.position.y = groundLevel - this.height; this.damage = 25; break;
                     case 'bat': this.width = 30; this.height = 20; this.damage = 12; break;
-                    case 'claw': this.width = 90; this.height = 100; this.velocity.x = 0; this.life = 15; this.damage = 18; break;
                     case 'pole': this.width = 350; this.height = 20; this.velocity.x = 0; this.position.y += 20; this.life = 15; this.damage = 15; if(!this.facingRight) this.position.x = this.owner.position.x - this.width; break;
                     case 'water': this.width = 25; this.height = 25; this.velocity.y = -5; this.damage = 10; break;
                     case 'thunder': 
@@ -249,19 +263,42 @@
                         this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
                         this.position.y = this.owner.position.y - 10;
                         break;
-                    case 'fireball':
-                        this.width = 35; this.height = 35; this.damage = 22; 
-                        break;
-                    case 'earth':
-                        this.width = 40; this.height = 40; this.velocity.y = -8; this.damage = 18; 
-                        break;
-                    // 新スキル：青龍
                     case 'dragon_beam':
                         this.width = 60; this.height = 60; this.damage = 20; this.life = 100;
                         break;
-                    // 新スキル：座敷童子
                     case 'flower':
                         this.width = 35; this.height = 35; this.damage = 15; this.life = 100;
+                        break;
+                    case 'poison_breath':
+                        this.width = 120; this.height = 100; this.damage = 20; this.life = 50;
+                        this.velocity.x = this.facingRight ? 4 : -4;
+                        this.position.y = this.owner.position.y;
+                        break;
+                    case 'blizzard':
+                        this.width = 140; this.height = 100; this.damage = 15; this.life = 30; this.stunDuration = 45; 
+                        this.velocity.x = this.facingRight ? 10 : -10;
+                        this.position.y = this.owner.position.y;
+                        break;
+                    case 'fox_fire':
+                        this.width = 120; this.height = 100; this.velocity.x = 0; this.life = 15; this.damage = 25; 
+                        this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
+                        this.position.y = this.owner.position.y - 10;
+                        break;
+                    // 人狼の突進に伴う爪エフェクト
+                    case 'claw': 
+                        this.width = 90; this.height = 100; this.velocity.x = 0; this.life = 15; this.damage = 18; 
+                        break;
+                    // 猪八戒の新スキル: 釘鈀(熊手)
+                    case 'rake':
+                        this.width = 120; this.height = 140; this.velocity.x = 0; this.life = 20; this.damage = 28;
+                        this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
+                        this.position.y = this.owner.position.y - 20;
+                        break;
+                    // 哪吒の新スキル: 槍突進
+                    case 'spear_dash':
+                        this.width = 140; this.height = 80; this.velocity.x = 0; this.life = 20; this.damage = 22;
+                        this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
+                        this.position.y = this.owner.position.y + 10;
                         break;
                 }
             }
@@ -443,54 +480,6 @@
                     c.beginPath(); c.ellipse(0, 0, this.width/2, 10, 0, 0, Math.PI*2); c.fill();
                     c.restore();
                 }
-                else if (this.type === 'fireball') {
-                    c.shadowBlur = 30; c.shadowColor = '#f97316'; 
-                    
-                    this.history.forEach((pos, idx) => {
-                        const alpha = idx / this.history.length;
-                        const size = (this.width/2) * alpha * (1 + Math.random()*0.3);
-                        c.fillStyle = `rgba(239, 68, 68, ${alpha})`;
-                        c.beginPath(); c.arc(pos.x + this.width/2, pos.y + this.height/2, size, 0, Math.PI*2); c.fill();
-                    });
-                    
-                    const grad = c.createRadialGradient(
-                        this.position.x + this.width/2, this.position.y + this.height/2, 0,
-                        this.position.x + this.width/2, this.position.y + this.height/2, this.width/2
-                    );
-                    grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.3, '#fef08a');
-                    grad.addColorStop(0.7, '#f97316'); grad.addColorStop(1, '#ef4444');
-                    c.fillStyle = grad;
-                    
-                    c.beginPath(); 
-                    const cx = this.position.x + this.width/2;
-                    const cy = this.position.y + this.height/2;
-                    const radius = this.width/2;
-                    for (let i = 0; i < Math.PI * 2; i += 0.5) {
-                        const r = radius + (Math.random() - 0.5) * 15;
-                        const x = cx + Math.cos(i) * r;
-                        const y = cy + Math.sin(i) * r;
-                        if (i === 0) c.moveTo(x, y);
-                        else c.lineTo(x, y);
-                    }
-                    c.closePath(); c.fill();
-                }
-                else if (this.type === 'earth') {
-                    c.shadowBlur = 10; c.shadowColor = '#451a03'; 
-                    const cx = this.position.x + this.width/2;
-                    const cy = this.position.y + this.height/2;
-                    
-                    c.save(); c.translate(cx, cy); c.rotate(this.frames * 0.2 * (this.velocity.x > 0 ? 1 : -1));
-                    
-                    c.fillStyle = '#78350f';
-                    c.beginPath();
-                    c.moveTo(-20, -15); c.lineTo(-5, -25); c.lineTo(15, -20); c.lineTo(25, 0); c.lineTo(15, 20); c.lineTo(-10, 25); c.lineTo(-25, 5);
-                    c.closePath(); c.fill();
-                    
-                    c.fillStyle = '#92400e';
-                    c.beginPath(); c.moveTo(-15, -10); c.lineTo(5, -15); c.lineTo(10, 5); c.lineTo(-10, 10);
-                    c.closePath(); c.fill();
-                    c.restore();
-                }
                 else if (this.type === 'dragon_beam') {
                     c.shadowBlur = 20; c.shadowColor = '#0ea5e9';
                     c.fillStyle = '#38bdf8';
@@ -500,17 +489,14 @@
                     const angle = Math.atan2(this.velocity.y, this.velocity.x);
                     c.rotate(angle);
                     
-                    // 水流のビーム
                     c.beginPath();
                     c.ellipse(0, 0, this.width/2, this.height/4, 0, 0, Math.PI*2);
                     c.fill();
                     
-                    // 龍の牙/水飛沫
                     c.fillStyle = '#e0f2fe';
                     c.beginPath(); c.moveTo(this.width/2, 0); c.lineTo(this.width/4, -15); c.lineTo(this.width/4, 15); c.fill();
                     c.restore();
                     
-                    // 残像
                     this.history.forEach((pos, idx) => {
                         const alpha = idx / this.history.length;
                         c.fillStyle = `rgba(14, 165, 233, ${alpha * 0.5})`;
@@ -524,33 +510,152 @@
                     c.translate(this.position.x + this.width/2, this.position.y + this.height/2);
                     c.rotate(this.frames * 0.1);
                     
-                    // 桜の花びら5枚
                     for(let i=0; i<5; i++) {
                         c.rotate((Math.PI * 2) / 5);
                         c.beginPath();
-                        c.fillStyle = '#fbcfe8'; // 薄ピンク
+                        c.fillStyle = '#fbcfe8'; 
                         c.moveTo(0, 0);
                         c.quadraticCurveTo(15, -15, 20, 0);
                         c.quadraticCurveTo(15, 15, 0, 0);
                         c.fill();
                         
-                        c.strokeStyle = '#be185d'; // 濃いピンクの縁取り
+                        c.strokeStyle = '#be185d'; 
                         c.lineWidth = 1;
                         c.stroke();
                     }
                     
-                    // 中心
                     c.fillStyle = '#fde047';
                     c.beginPath(); c.arc(0, 0, 5, 0, Math.PI*2); c.fill();
                     c.restore();
 
-                    // 小さな花びらの残像
                     this.history.forEach((pos, idx) => {
                         if (idx % 3 !== 0) return;
                         const alpha = idx / this.history.length;
                         c.fillStyle = `rgba(244, 114, 182, ${alpha})`;
                         c.beginPath(); c.arc(pos.x + this.width/2 + Math.sin(idx)*10, pos.y + this.height/2 + Math.cos(idx)*10, 3, 0, Math.PI*2); c.fill();
                     });
+                }
+                else if (this.type === 'poison_breath') {
+                    c.shadowBlur = 20; c.shadowColor = '#a855f7';
+                    
+                    this.history.forEach((pos, idx) => {
+                        const alpha = (idx / this.history.length) * (this.life / 50);
+                        c.fillStyle = `rgba(168, 85, 247, ${alpha * 0.6})`;
+                        c.beginPath(); c.arc(pos.x + this.width/2, pos.y + this.height/2, (this.width/2) * alpha * 1.5, 0, Math.PI*2); c.fill();
+                    });
+
+                    c.fillStyle = `rgba(147, 51, 234, ${Math.min(1, this.life / 20)})`;
+                    for(let i=0; i<4; i++) {
+                        c.beginPath();
+                        c.arc(
+                            this.position.x + this.width/2 + (Math.sin(this.frames*0.1 + i)*20),
+                            this.position.y + this.height/2 + (Math.cos(this.frames*0.15 + i)*20),
+                            this.width/3, 0, Math.PI*2
+                        );
+                        c.fill();
+                    }
+                }
+                else if (this.type === 'blizzard') {
+                    c.shadowBlur = 10; c.shadowColor = '#bae6fd';
+                    c.fillStyle = `rgba(224, 242, 254, ${this.life / 30})`;
+                    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+                    
+                    c.strokeStyle = '#ffffff';
+                    c.lineWidth = 2;
+                    for(let i=0; i<10; i++) {
+                        c.beginPath();
+                        const startX = this.position.x + Math.random() * this.width;
+                        const startY = this.position.y + Math.random() * this.height;
+                        c.moveTo(startX, startY);
+                        c.lineTo(startX + (this.facingRight ? 20 : -20), startY + (Math.random()-0.5)*10);
+                        c.stroke();
+                    }
+                }
+                else if (this.type === 'fox_fire') {
+                    c.shadowBlur = 30; c.shadowColor = '#f97316';
+                    const cx = this.position.x + this.width/2;
+                    const cy = this.position.y + this.height/2;
+                    for (let i = 0; i < 5; i++) {
+                        const pulse = Math.sin(this.frames * 0.5 + i) * 10;
+                        const grad = c.createRadialGradient(
+                            cx + (Math.random() - 0.5) * 40, cy + (Math.random() - 0.5) * 40, 0,
+                            cx, cy, this.width/2 + pulse
+                        );
+                        grad.addColorStop(0, '#ffffff');
+                        grad.addColorStop(0.2, '#fef08a');
+                        grad.addColorStop(0.6, '#f97316');
+                        grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                        c.fillStyle = grad;
+                        c.beginPath();
+                        c.arc(cx + (i*10 - 20), cy + Math.sin(this.frames*0.5+i)*10, this.width/2.5 + pulse, 0, Math.PI*2);
+                        c.fill();
+                    }
+                }
+                // 猪八戒の新しい釘鈀(熊手)アニメーション
+                else if (this.type === 'rake') {
+                    c.shadowBlur = 15; c.shadowColor = '#fbcfe8'; 
+                    const cx = this.facingRight ? this.position.x : this.position.x + this.width;
+                    const cy = this.position.y + this.height - 20;
+                    
+                    c.save();
+                    c.translate(cx, cy);
+                    const progress = 1 - (this.life / 20);
+                    let angle = this.facingRight ? (-Math.PI/2 + progress * Math.PI) : (Math.PI/2 - progress * Math.PI);
+                    c.rotate(angle);
+                    
+                    c.fillStyle = '#78350f';
+                    c.fillRect(-5, -90, 10, 90);
+                    
+                    c.fillStyle = '#cbd5e1';
+                    c.fillRect(this.facingRight ? -15 : -25, -100, 40, 10);
+                    for(let i=0; i<5; i++) {
+                        c.fillStyle = '#f8fafc';
+                        c.fillRect(this.facingRight ? -15 + i*8 : -25 + i*8, -100, 5, 25);
+                    }
+                    c.restore();
+
+                    c.beginPath();
+                    c.strokeStyle = `rgba(251, 207, 232, ${this.life / 20})`;
+                    c.lineWidth = 15;
+                    c.lineCap = 'round';
+                    c.arc(cx, cy, 90, this.facingRight ? -Math.PI/2 : Math.PI/2, this.facingRight ? angle : angle, this.facingRight ? false : true);
+                    c.stroke();
+                }
+                // 哪吒の槍と炎の突進エフェクト
+                else if (this.type === 'spear_dash') {
+                    c.shadowBlur = 20; c.shadowColor = '#ef4444';
+                    const cx = this.facingRight ? this.position.x : this.position.x + this.width;
+                    const cy = this.position.y + this.height / 2;
+                    
+                    c.save();
+                    c.translate(cx, cy);
+                    if (!this.facingRight) c.scale(-1, 1);
+
+                    // 槍の柄
+                    c.fillStyle = '#78350f';
+                    c.fillRect(-60, -5, 140, 10);
+                    // 槍の刃
+                    c.fillStyle = '#cbd5e1';
+                    c.beginPath();
+                    c.moveTo(80, -15); c.lineTo(130, 0); c.lineTo(80, 15);
+                    c.closePath(); c.fill();
+                    
+                    // 炎のエフェクト
+                    c.fillStyle = `rgba(239, 68, 68, ${this.life / 20})`;
+                    c.beginPath();
+                    c.moveTo(-20, 0);
+                    c.quadraticCurveTo(50, -50, 110, 0);
+                    c.quadraticCurveTo(50, 50, -20, 0);
+                    c.fill();
+
+                    c.fillStyle = `rgba(253, 224, 71, ${this.life / 20})`;
+                    c.beginPath();
+                    c.moveTo(20, 0);
+                    c.quadraticCurveTo(60, -25, 90, 0);
+                    c.quadraticCurveTo(60, 25, 20, 0);
+                    c.fill();
+                    
+                    c.restore();
                 }
 
                 c.restore();
@@ -562,7 +667,6 @@
 
                 this.draw();
                 
-                // flower特有の上下運動
                 if (this.type === 'flower') {
                     this.velocity.y = Math.sin(this.frames * 0.2) * 5;
                 }
@@ -571,15 +675,20 @@
                 this.position.y += this.velocity.y;
                 this.frames++;
 
-                if (this.type === 'water' || this.type === 'earth') {
+                if (this.type === 'water') {
                     this.velocity.y += gravity; 
                     if (this.position.y + this.height > groundLevel) this.markedForDeletion = true; 
-                } else if (this.type === 'claw' || this.type === 'pole' || this.type === 'thunder' || this.type === 'wind_blast' || this.type === 'dragon_beam' || this.type === 'flower') {
-                    if (this.type !== 'flower' && this.type !== 'dragon_beam') this.life--;
+                } else if (this.type === 'claw' || this.type === 'pole' || this.type === 'thunder' || this.type === 'wind_blast' || this.type === 'dragon_beam' || this.type === 'flower' || this.type === 'poison_breath' || this.type === 'blizzard' || this.type === 'fox_fire' || this.type === 'rake' || this.type === 'spear_dash') {
+                    if (this.type !== 'flower' && this.type !== 'dragon_beam' && this.type !== 'poison_breath') this.life--;
                     if(this.life <= 0 && this.type !== 'flower' && this.type !== 'dragon_beam') this.markedForDeletion = true;
                     
                     if (this.type === 'pole') { this.position.y = this.owner.position.y + 60; this.position.x = this.facingRight ? this.owner.position.x + 30 : this.owner.position.x - this.width + 30; } 
-                    else if (this.type === 'claw' || this.type === 'wind_blast') { this.position.y = this.owner.position.y + 10; this.position.x = this.facingRight ? this.owner.position.x + 40 : this.owner.position.x - this.width + 20; }
+                    else if (this.type === 'claw' || this.type === 'wind_blast' || this.type === 'fox_fire' || this.type === 'rake' || this.type === 'spear_dash') { 
+                        this.position.y = this.owner.position.y + 10; 
+                        if(this.type === 'rake') this.position.y = this.owner.position.y - 20;
+                        if(this.type === 'spear_dash') this.position.y = this.owner.position.y + 20;
+                        this.position.x = this.facingRight ? this.owner.position.x + 40 : this.owner.position.x - this.width + 20; 
+                    }
                 }
 
                 if(this.position.x < -1000 || this.position.x > canvas.width + 1000 || this.position.y > canvas.height + 200 || this.position.y < -200) {
@@ -610,26 +719,58 @@
                 this.mana = 100;
                 this.facingRight = isPlayer1;
                 
-                // キャラ固有のサイズ・重力などの適用
                 this.width = data.width || 60;
                 this.height = data.height || 110;
                 this.spriteScale = data.spriteScale || 10;
                 this.gravityScale = data.gravityScale !== undefined ? data.gravityScale : 1;
 
-                this.attackBox = { position: { x: this.position.x, y: this.position.y }, width: (charId === 'wukong') ? 110 : (charId === 'zashiki' ? 50 : 70), height: (charId === 'zashiki' ? 40 : 50) };
+                this.attackBox = { 
+                    position: { x: this.position.x, y: this.position.y }, 
+                    width: (charId === 'wukong' || charId === 'seiryu' || charId === 'orochi') ? 110 : (charId === 'zashiki' ? 50 : 70), 
+                    height: (charId === 'zashiki' ? 40 : 50) 
+                };
                 this.isAttacking = false;
                 this.attackCooldown = false;
                 this.stunTimer = 0; 
+                this.isFrozen = false; 
+                this.isGuarding = false; 
+                
+                // 突進（ダッシュ）用タイマー
+                this.dashTimer = 0;
             }
 
             draw() {
                 if (this.stunTimer > 0 && this.stunTimer % 10 < 5) c.globalAlpha = 0.5;
+                if (this.isFrozen) c.fillStyle = 'rgba(186, 230, 253, 0.5)'; 
                 
-                // サイズが違うキャラでも足下が合うように調整
-                const offsetX = (12 * this.spriteScale - this.width) / 2;
-                const offsetY = (12 * this.spriteScale - this.height);
+                const rowLength = this.sprite[0].length;
+                const spriteWidth = rowLength * this.spriteScale;
+                const offsetX = (spriteWidth - this.width) / 2;
+                const offsetY = (this.sprite.length * this.spriteScale - this.height);
+                
+                // 人狼のダッシュ時の残像エフェクト
+                if (this.dashTimer > 0) {
+                    for(let i=1; i<=3; i++) {
+                        c.globalAlpha = 0.4 / i;
+                        drawPixelArt(c, this.sprite, this.position.x - offsetX - (this.velocity.x * i * 0.5), this.position.y - offsetY, this.spriteScale, this.facingRight);
+                    }
+                    c.globalAlpha = 1.0;
+                }
+
                 drawPixelArt(c, this.sprite, this.position.x - offsetX, this.position.y - offsetY, this.spriteScale, this.facingRight);
                 
+                if (this.isFrozen) c.fillRect(this.position.x - offsetX, this.position.y - offsetY, spriteWidth, this.sprite.length * this.spriteScale);
+                
+                if (this.isGuarding) {
+                    c.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                    c.lineWidth = 4;
+                    c.beginPath();
+                    const shieldX = this.facingRight ? this.position.x + this.width + 10 : this.position.x - 10;
+                    c.moveTo(shieldX, this.position.y - 10);
+                    c.quadraticCurveTo(this.facingRight ? shieldX + 30 : shieldX - 30, this.position.y + this.height / 2, shieldX, this.position.y + this.height + 10);
+                    c.stroke();
+                }
+
                 c.globalAlpha = 1.0;
 
                 if (this.isAttacking) {
@@ -644,9 +785,16 @@
                 this.attackBox.position.y = this.position.y + (this.height * 0.3);
                 this.attackBox.position.x = this.facingRight ? this.position.x + this.width : this.position.x - this.attackBox.width;
 
-                if (this.stunTimer > 0) {
+                // 突進時の強制移動
+                if (this.dashTimer > 0) {
+                    this.dashTimer--;
+                    this.velocity.x = this.facingRight ? 25 : -25;
+                    this.velocity.y = 0; // 重力無効で水平突進
+                    this.isGuarding = false;
+                } else if (this.stunTimer > 0) {
                     this.stunTimer--;
                     this.velocity.x = 0;
+                    if(this.stunTimer <= 0) this.isFrozen = false;
                 }
 
                 this.position.x += this.velocity.x;
@@ -656,8 +804,9 @@
                     this.velocity.y = 0;
                     this.position.y = groundLevel - this.height;
                 } else {
-                    // キャラ固有の重力倍率を適用（青龍はふんわり落ちる）
-                    this.velocity.y += gravity * this.gravityScale;
+                    if (this.dashTimer <= 0) {
+                        this.velocity.y += gravity * this.gravityScale;
+                    }
                 }
 
                 if(this.position.x < 0) this.position.x = 0;
@@ -671,7 +820,7 @@
             }
 
             attack() {
-                if(this.attackCooldown || this.stunTimer > 0) return;
+                if(this.attackCooldown || this.stunTimer > 0 || this.isGuarding) return;
                 this.isAttacking = true;
                 this.attackCooldown = true;
                 setTimeout(() => { this.isAttacking = false; }, 100);
@@ -679,7 +828,7 @@
             }
 
             useSuperPower() {
-                if(this.mana >= this.spCost && this.stunTimer <= 0) {
+                if(this.mana >= this.spCost && this.stunTimer <= 0 && !this.isGuarding) {
                     this.mana -= this.spCost;
                     this.updateUI();
                     
@@ -689,12 +838,32 @@
                     
                     if(this.spType === 'tornado') projVelX = this.facingRight ? 5 : -5;
                     if(this.spType === 'wave') projVelX = this.facingRight ? 15 : -15;
-                    if(this.spType === 'fireball') projVelX = this.facingRight ? 18 : -18;
+                    if(this.spType === 'fox_fire') {
+                        projVelX = 0; 
+                        startX = this.facingRight ? this.position.x + this.width : this.position.x - 60;
+                    }
                     if(this.spType === 'flower') projVelX = this.facingRight ? 8 : -8;
+                    if(this.spType === 'poison_breath') projVelX = this.facingRight ? 4 : -4;
                     if(this.spType === 'dragon_beam') {
                         projVelX = this.facingRight ? 15 : -15;
-                        // 空中にいる場合は斜め下に発射
                         projVelY = (this.position.y + this.height < groundLevel - 10) ? 10 : 0;
+                        startX = this.facingRight ? this.position.x + this.width - 20 : this.position.x - 40;
+                    }
+                    if(this.spType === 'rake') {
+                        projVelX = 0;
+                        startX = this.facingRight ? this.position.x + this.width : this.position.x - 100;
+                    }
+                    if(this.spType === 'spear_dash') {
+                        projVelX = 0;
+                        startX = this.facingRight ? this.position.x + this.width : this.position.x - 140;
+                    }
+
+                    // 人狼、哪吒の突進トリガー
+                    if(this.spType === 'claw') {
+                        this.dashTimer = 15;
+                    }
+                    if(this.spType === 'spear_dash') {
+                        this.dashTimer = 20;
                     }
 
                     projectiles.push(new Projectile({
@@ -734,18 +903,20 @@
             if(gameState !== 'PLAYING') return;
             
             switch (event.key.toLowerCase()) {
-                case 'd': keys.d = true; if(player1.stunTimer <= 0) player1.facingRight = true; break;
-                case 'a': keys.a = true; if(player1.stunTimer <= 0) player1.facingRight = false; break;
-                case 'w': if(player1.velocity.y === 0 && player1.stunTimer <= 0) player1.velocity.y = player1.jumpPower; break;
+                case 'd': keys.d = true; if(player1.stunTimer <= 0 && !keys.s) player1.facingRight = true; break;
+                case 'a': keys.a = true; if(player1.stunTimer <= 0 && !keys.s) player1.facingRight = false; break;
+                case 'w': if(player1.velocity.y === 0 && player1.stunTimer <= 0 && !keys.s) player1.velocity.y = player1.jumpPower; break;
+                case 's': keys.s = true; break;
                 case 'g': player1.attack(); break;
                 case 'h': player1.useSuperPower(); break;
             }
 
             if (gameMode === 'PVP') {
                 switch (event.key) {
-                    case 'ArrowRight': keys.ArrowRight = true; if(player2.stunTimer <= 0) player2.facingRight = true; break;
-                    case 'ArrowLeft': keys.ArrowLeft = true; if(player2.stunTimer <= 0) player2.facingRight = false; break;
-                    case 'ArrowUp': if(player2.velocity.y === 0 && player2.stunTimer <= 0) player2.velocity.y = player2.jumpPower; break;
+                    case 'ArrowRight': keys.ArrowRight = true; if(player2.stunTimer <= 0 && !keys.ArrowDown) player2.facingRight = true; break;
+                    case 'ArrowLeft': keys.ArrowLeft = true; if(player2.stunTimer <= 0 && !keys.ArrowDown) player2.facingRight = false; break;
+                    case 'ArrowUp': if(player2.velocity.y === 0 && player2.stunTimer <= 0 && !keys.ArrowDown) player2.velocity.y = player2.jumpPower; break;
+                    case 'ArrowDown': keys.ArrowDown = true; break;
                     case ',': case '、': player2.attack(); break;
                     case '.': case '。': player2.useSuperPower(); break;
                 }
@@ -755,10 +926,12 @@
             switch (event.key.toLowerCase()) {
                 case 'd': keys.d = false; break;
                 case 'a': keys.a = false; break;
+                case 's': keys.s = false; break;
             }
             switch (event.key) {
                 case 'ArrowRight': keys.ArrowRight = false; break;
                 case 'ArrowLeft': keys.ArrowLeft = false; break;
+                case 'ArrowDown': keys.ArrowDown = false; break;
             }
         });
 
@@ -771,14 +944,14 @@
             Object.keys(characterData).forEach(id => {
                 const char = characterData[id];
                 const card = document.createElement('div');
-                card.className = 'p-3 border-4 border-gray-600 bg-gray-800 rounded cursor-pointer hover:border-yellow-400 transition-all flex flex-col items-center group relative';
+                card.className = 'p-2 border-4 border-gray-600 bg-gray-800 rounded cursor-pointer hover:border-yellow-400 transition-all flex flex-col items-center group relative';
                 
                 const thumbCanvasId = `thumb-${id}`;
                 card.innerHTML = `
-                    <div class="bg-gray-700 rounded mb-2 p-1 w-full flex justify-center items-center shadow-inner border-2 border-gray-900 h-20">
+                    <div class="bg-gray-700 rounded mb-1 p-1 w-full flex justify-center items-center shadow-inner border-2 border-gray-900 h-16 overflow-hidden">
                         <canvas id="${thumbCanvasId}" width="60" height="60"></canvas>
                     </div>
-                    <h2 class="text-sm font-bold mb-1 text-yellow-300 pixel-text">${char.name}</h2>
+                    <h2 class="text-xs font-bold mb-1 text-yellow-300 pixel-text whitespace-nowrap">${char.name}</h2>
                     <div class="w-full text-[10px] leading-tight text-gray-300 hidden group-hover:block absolute bg-gray-900 border border-gray-500 p-2 z-50 top-full mt-2 rounded shadow-xl w-48 left-1/2 transform -translate-x-1/2">
                         <p class="mb-1">${char.desc}</p>
                         <p class="text-green-400">HP: ${char.health} | SPD: ${char.speed}</p>
@@ -806,9 +979,11 @@
                 });
                 container.appendChild(card);
                 
-                // サムネイルの中央に描画
                 const tCtx = document.getElementById(thumbCanvasId).getContext('2d');
-                drawPixelArt(tCtx, char.sprite, 6, 6, 4, true);
+                const sScale = char.sprite[0].length > 15 ? 2.5 : 4;
+                const sOffX = (60 - (char.sprite[0].length * sScale)) / 2;
+                const sOffY = (60 - (char.sprite.length * sScale)) / 2;
+                drawPixelArt(tCtx, char.sprite, sOffX, sOffY, sScale, true);
             });
         }
 
@@ -872,19 +1047,24 @@
             const distanceX = player1.position.x - player2.position.x;
             if(player2.stunTimer <= 0) {
                 player2.facingRight = distanceX > 0;
+                player2.isGuarding = false;
 
-                if (Math.abs(distanceX) > (player2.charId === 'wukong' || player2.charId === 'fujin' ? 120 : 70)) {
+                if (Math.abs(distanceX) > (player2.charId === 'wukong' || player2.charId === 'fujin' || player2.charId === 'orochi' || player2.charId === 'fox' || player2.charId === 'pig' ? 130 : 70)) {
                     player2.velocity.x = player2.facingRight ? player2.speed * 0.5 : -player2.speed * 0.5;
                 } else {
                     player2.velocity.x = 0;
-                    if(Math.random() < 0.05) player2.attack();
+                    if (player1.isAttacking && Math.random() < 0.6) {
+                        player2.isGuarding = true;
+                    } else if(Math.random() < 0.05) {
+                        player2.attack();
+                    }
                 }
                 
-                if(Math.random() < 0.01 && player2.mana >= player2.spCost) {
+                if(!player2.isGuarding && Math.random() < 0.01 && player2.mana >= player2.spCost) {
                     player2.useSuperPower();
                 }
 
-                if(Math.random() < 0.01 && player2.velocity.y === 0) player2.velocity.y = player2.jumpPower;
+                if(!player2.isGuarding && Math.random() < 0.01 && player2.velocity.y === 0) player2.velocity.y = player2.jumpPower;
             }
         }
 
@@ -907,20 +1087,31 @@
             if (player1) player1.update();
             if (player2) player2.update();
 
-            // 1P Movement
+            // 1P Movement & Guard
             if(gameState === 'PLAYING' && player1.stunTimer <= 0) {
-                player1.velocity.x = 0;
-                if (keys.a && player1.position.x > 0) player1.velocity.x = -player1.speed;
-                else if (keys.d && player1.position.x + player1.width < canvas.width) player1.velocity.x = player1.speed;
+                player1.isGuarding = keys.s;
+                // 突進中でなければキーによる移動を許可
+                if(player1.dashTimer <= 0) {
+                    player1.velocity.x = 0;
+                    if (!player1.isGuarding) {
+                        if (keys.a && player1.position.x > 0) player1.velocity.x = -player1.speed;
+                        else if (keys.d && player1.position.x + player1.width < canvas.width) player1.velocity.x = player1.speed;
+                    }
+                }
             }
 
-            // 2P or CPU Movement
+            // 2P or CPU Movement & Guard
             if(gameState === 'PLAYING') {
                 if (gameMode === 'PVP') {
                     if (player2.stunTimer <= 0) {
-                        player2.velocity.x = 0;
-                        if (keys.ArrowLeft && player2.position.x > 0) player2.velocity.x = -player2.speed;
-                        else if (keys.ArrowRight && player2.position.x + player2.width < canvas.width) player2.velocity.x = player2.speed;
+                        player2.isGuarding = keys.ArrowDown;
+                        if(player2.dashTimer <= 0) {
+                            player2.velocity.x = 0;
+                            if (!player2.isGuarding) {
+                                if (keys.ArrowLeft && player2.position.x > 0) player2.velocity.x = -player2.speed;
+                                else if (keys.ArrowRight && player2.position.x + player2.width < canvas.width) player2.velocity.x = player2.speed;
+                            }
+                        }
                     }
                 } else {
                     enemyAI();
@@ -938,17 +1129,23 @@
                     rect1: { position: p.position, width: p.width, height: p.height },
                     rect2: target
                 })) {
-                    if (p.type === 'thunder') target.stunTimer = p.stunDuration;
                     
-                    if (p.type !== 'pole' && p.type !== 'claw' && p.type !== 'wind_blast' && p.type !== 'thunder') {
+                    if (p.type !== 'pole' && p.type !== 'claw' && p.type !== 'wind_blast' && p.type !== 'thunder' && p.type !== 'poison_breath' && p.type !== 'blizzard' && p.type !== 'fox_fire' && p.type !== 'rake' && p.type !== 'spear_dash') {
                         p.markedForDeletion = true;
                     } else {
                         p.hasHit = true; 
                     }
 
                     if(gameState === 'PLAYING') {
-                        target.takeDamage(p.damage);
-                        p.owner.heal(5); 
+                        if (target.isGuarding) {
+                            // ガード時はダメージを大幅にカット（20%のみ通る）、スタン等の追加効果無効
+                            target.takeDamage(p.damage * 0.2);
+                        } else {
+                            if (p.type === 'thunder') target.stunTimer = p.stunDuration;
+                            if (p.type === 'blizzard') { target.stunTimer = p.stunDuration; target.isFrozen = true; }
+                            target.takeDamage(p.damage);
+                            p.owner.heal(5); 
+                        }
                     }
                 }
 
@@ -960,13 +1157,21 @@
             // 近接攻撃の当たり判定
             if (player1.isAttacking && rectangularCollision({ rect1: player1.attackBox, rect2: player2 })) {
                 player1.isAttacking = false; 
-                player2.takeDamage(player1.attackDamage);
-                player1.heal(3);
+                if (player2.isGuarding) {
+                    player2.takeDamage(player1.attackDamage * 0.2);
+                } else {
+                    player2.takeDamage(player1.attackDamage);
+                    player1.heal(3);
+                }
             }
             if (player2.isAttacking && rectangularCollision({ rect1: player2.attackBox, rect2: player1 })) {
                 player2.isAttacking = false;
-                player1.takeDamage(player2.attackDamage);
-                player2.heal(3);
+                if (player1.isGuarding) {
+                    player1.takeDamage(player2.attackDamage * 0.2);
+                } else {
+                    player1.takeDamage(player2.attackDamage);
+                    player2.heal(3);
+                }
             }
 
             // 勝敗判定
