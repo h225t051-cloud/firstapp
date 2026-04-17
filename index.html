@@ -62,6 +62,8 @@
             <div class="w-full bg-gray-700 h-3 border-x-4 border-b-4 border-gray-400 relative">
                 <div id="player-mp" class="bg-cyan-400 h-full w-full transition-all duration-75"></div>
             </div>
+            <!-- ラウンド取得マーカー -->
+            <div id="p1-wins" class="flex gap-2 mt-2"></div>
         </div>
 
         <!-- タイマー -->
@@ -76,14 +78,21 @@
             <div class="w-full bg-gray-700 h-3 border-x-4 border-b-4 border-gray-400 relative flex justify-start">
                 <div id="enemy-mp" class="bg-cyan-400 h-full w-full transition-all duration-75"></div>
             </div>
+            <!-- ラウンド取得マーカー -->
+            <div id="p2-wins" class="flex gap-2 mt-2 flex-row-reverse"></div>
         </div>
 
     </div>
 
-    <!-- リザルト画面 -->
+    <!-- ラウンド進行アナウンス -->
+    <div id="round-announcement" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden bg-black bg-opacity-40 pixel-text pointer-events-none transition-opacity duration-300">
+        <div id="round-text" class="text-6xl md:text-8xl font-bold text-white text-center drop-shadow-2xl"></div>
+    </div>
+
+    <!-- 最終リザルト画面 -->
     <div id="result" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden bg-black bg-opacity-80 tracking-widest pixel-text">
         <div id="result-text" class="text-6xl md:text-8xl font-bold text-yellow-400 mb-8"></div>
-        <button onclick="resetToTitle()" class="px-8 py-3 bg-gray-700 text-white font-bold text-xl rounded border-4 border-gray-500 hover:bg-gray-600 hover:border-white transition-all">
+        <button onclick="resetToTitle()" class="px-8 py-3 bg-gray-700 text-white font-bold text-xl rounded border-4 border-gray-500 hover:bg-gray-600 hover:border-white transition-all pointer-events-auto">
             タイトルに戻る
         </button>
     </div>
@@ -164,7 +173,6 @@
                 "____WWWW____",
                 "____WWWW____"
             ],
-            // 新キャラ: 哪吒 (お団子頭、風火輪)
             nezha: [
                 "__R______R__",
                 "__KR_KK_RK__",
@@ -200,27 +208,33 @@
         let p2CharId = null;
         let selectState = 1;
 
+        // ラウンド制用の変数
+        let p1Wins = 0;
+        let p2Wins = 0;
+        let currentRound = 1;
+
         const keys = { 
             a: false, d: false, w: false, s: false,
             ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false
         };
 
+        // HPを約1.5倍に引き上げ
         const characterData = {
-            'tengu': { name: '天狗', color: '#ef4444', speed: 7, jump: -20, health: 100, attackDamage: 8, spCost: 30, spType: 'tornado', desc: '空中戦が得意。竜巻を放つ。', sprite: sprites.tengu },
-            'oni': { name: '鬼', color: '#b91c1c', speed: 4, jump: -14, health: 100, attackDamage: 15, spCost: 40, spType: 'wave', desc: 'パワー型。衝撃波を放つ。', sprite: sprites.oni },
-            'raijin': { name: '雷神', color: '#eab308', speed: 5, jump: -18, health: 100, attackDamage: 10, spCost: 70, spType: 'thunder', desc: '広範囲の雷で相手を麻痺させる。', sprite: sprites.raijin },
-            'fujin': { name: '風神', color: '#22c55e', speed: 8, jump: -19, health: 100, attackDamage: 10, spCost: 60, spType: 'wind_blast', desc: '近距離に大ダメージの神風を放つ。', sprite: sprites.fujin },
-            'fox': { name: '九尾の狐', color: '#f472b6', speed: 12, jump: -18, health: 70, attackDamage: 14, spCost: 35, spType: 'fox_fire', desc: '超速・近接特化。目の前を焼き尽くす。', sprite: sprites.fox },
-            'pig': { name: '猪八戒', color: '#fbcfe8', speed: 4, jump: -12, health: 160, attackDamage: 12, spCost: 30, spType: 'rake', desc: 'HPが非常に高い。巨大な釘鈀で薙ぎ払う。', sprite: sprites.pig },
-            'seiryu': { name: '青龍', color: '#0ea5e9', speed: 14, jump: -3.5, health: 100, attackDamage: 11, spCost: 40, spType: 'dragon_beam', desc: '画面中央まで飛び、長く滞空する。', sprite: sprites.seiryu, gravityScale: 0.03, width: 120, spriteScale: 6 },
-            'zashiki': { name: '座敷童子', color: '#be123c', speed: 6, jump: -15, health: 90, attackDamage: 9, spCost: 25, spType: 'flower', desc: '小柄で攻撃が当たりにくい。', sprite: sprites.zashiki, width: 45, height: 80, spriteScale: 8 },
-            'orochi': { name: '八岐大蛇', color: '#4ade80', speed: 3, jump: -10, health: 140, attackDamage: 14, spCost: 40, spType: 'poison_breath', desc: '巨体でリーチが長い。毒霧を吐く。', sprite: sprites.orochi, width: 100, spriteScale: 6 },
-            'yuki': { name: '雪女', color: '#bae6fd', speed: 7, jump: -7, health: 90, attackDamage: 8, spCost: 50, spType: 'blizzard', desc: 'フワフワ浮く。相手を凍らせる吹雪。', sprite: sprites.yuki, gravityScale: 0.3 },
-            'vampire': { name: '吸血鬼', color: '#7e22ce', speed: 6, jump: -16, health: 100, attackDamage: 10, spCost: 35, spType: 'bat', desc: '滞空力が高い。攻撃ヒット時HP吸収。', sprite: sprites.vampire, gravityScale: 0.66 },
-            'werewolf': { name: '人狼', color: '#92400e', speed: 10, jump: -15, health: 100, attackDamage: 12, spCost: 20, spType: 'claw', desc: '超スピード。前方に突進しながら爪で引き裂く。', sprite: sprites.werewolf },
-            'nezha': { name: '哪吒', color: '#ef4444', speed: 10, jump: -16, health: 100, attackDamage: 11, spCost: 35, spType: 'spear_dash', desc: '炎と槍を操る。高速で前方に突進する。', sprite: sprites.nezha },
-            'wukong': { name: '孫悟空', color: '#eab308', speed: 8, jump: -18, health: 100, attackDamage: 9, spCost: 30, spType: 'pole', desc: '通常リーチ長め。如意棒を伸ばす。', sprite: sprites.wukong },
-            'kappa': { name: '河童', color: '#22c55e', speed: 6, jump: -16, health: 100, attackDamage: 8, spCost: 15, spType: 'water', desc: '燃費が良く、水球を連射可能。', sprite: sprites.kappa }
+            'tengu': { name: '天狗', color: '#ef4444', speed: 7, jump: -20, health: 150, attackDamage: 8, spCost: 30, spType: 'tornado', desc: '空中戦が得意。竜巻を放つ。', sprite: sprites.tengu },
+            'oni': { name: '鬼', color: '#b91c1c', speed: 4, jump: -14, health: 150, attackDamage: 15, spCost: 40, spType: 'wave', desc: 'パワー型。衝撃波を放つ。', sprite: sprites.oni },
+            'raijin': { name: '雷神', color: '#eab308', speed: 5, jump: -18, health: 150, attackDamage: 10, spCost: 70, spType: 'thunder', desc: '中距離に雷を放ち、相手を長時間麻痺させる。', sprite: sprites.raijin },
+            'fujin': { name: '風神', color: '#22c55e', speed: 8, jump: -19, health: 150, attackDamage: 10, spCost: 60, spType: 'wind_blast', desc: '近距離に大ダメージの神風を放つ。', sprite: sprites.fujin },
+            'fox': { name: '九尾の狐', color: '#f472b6', speed: 12, jump: -18, health: 110, attackDamage: 14, spCost: 35, spType: 'fox_fire', desc: '超速・近接特化。目の前を焼き尽くす。', sprite: sprites.fox },
+            'pig': { name: '猪八戒', color: '#fbcfe8', speed: 4, jump: -12, health: 240, attackDamage: 7, spCost: 45, spType: 'rake', desc: 'HPが非常に高い。巨大な釘鈀で薙ぎ払う。', sprite: sprites.pig, atkDuration: 200, atkCooldown: 800 },
+            'seiryu': { name: '青龍', color: '#0ea5e9', speed: 14, jump: -3.5, health: 150, attackDamage: 11, spCost: 40, spType: 'dragon_beam', desc: '画面中央まで飛び、長く滞空する。', sprite: sprites.seiryu, gravityScale: 0.03, width: 120, spriteScale: 6 },
+            'zashiki': { name: '座敷童子', color: '#be123c', speed: 9, jump: -15, health: 140, attackDamage: 9, spCost: 25, spType: 'flower', desc: '小柄で攻撃が当たりにくい。', sprite: sprites.zashiki, width: 45, height: 80, spriteScale: 8 },
+            'orochi': { name: '八岐大蛇', color: '#4ade80', speed: 5, jump: -10, health: 210, attackDamage: 14, spCost: 40, spType: 'poison_breath', desc: '巨体でリーチが長い。毒霧を吐く。', sprite: sprites.orochi, width: 100, spriteScale: 6 },
+            'yuki': { name: '雪女', color: '#bae6fd', speed: 7, jump: -7, health: 140, attackDamage: 8, spCost: 50, spType: 'blizzard', desc: 'フワフワ浮く。相手を凍らせる吹雪。', sprite: sprites.yuki, gravityScale: 0.3 },
+            'vampire': { name: '吸血鬼', color: '#7e22ce', speed: 6, jump: -16, health: 150, attackDamage: 10, spCost: 35, spType: 'bat', desc: '滞空力が高い。攻撃ヒット時HP吸収。', sprite: sprites.vampire, gravityScale: 0.66 },
+            'werewolf': { name: '人狼', color: '#92400e', speed: 10, jump: -15, health: 150, attackDamage: 12, spCost: 20, spType: 'claw', desc: '超スピード。前方に突進しながら爪で引き裂く。', sprite: sprites.werewolf },
+            'nezha': { name: '哪吒', color: '#ef4444', speed: 10, jump: -16, health: 150, attackDamage: 11, spCost: 35, spType: 'spear_dash', desc: '炎と槍を操る。高速で前方に突進する。', sprite: sprites.nezha },
+            'wukong': { name: '孫悟空', color: '#eab308', speed: 8, jump: -18, health: 150, attackDamage: 9, spCost: 30, spType: 'pole', desc: '通常リーチ長め。如意棒を伸ばす。', sprite: sprites.wukong },
+            'kappa': { name: '河童', color: '#22c55e', speed: 6, jump: -16, health: 150, attackDamage: 8, spCost: 15, spType: 'water', desc: '燃費が良く、水球を連射可能。', sprite: sprites.kappa }
         };
 
         function selectMode(mode) {
@@ -254,9 +268,10 @@
                     case 'pole': this.width = 350; this.height = 20; this.velocity.x = 0; this.position.y += 20; this.life = 15; this.damage = 15; if(!this.facingRight) this.position.x = this.owner.position.x - this.width; break;
                     case 'water': this.width = 25; this.height = 25; this.velocity.y = -5; this.damage = 10; break;
                     case 'thunder': 
-                        this.width = 80; this.height = canvas.height; this.velocity.x = 0; this.position.y = 0; 
-                        this.life = 20; this.damage = 12; this.stunDuration = 60; 
-                        this.position.x = this.facingRight ? this.owner.position.x + 200 : this.owner.position.x - 200 - this.width;
+                        this.width = 150; this.height = 80; this.velocity.x = this.facingRight ? 12 : -12; 
+                        this.life = 25; this.damage = 15; this.stunDuration = 120; // 2秒間麻痺(強化)
+                        this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
+                        this.position.y = this.owner.position.y + 10;
                         break;
                     case 'wind_blast':
                         this.width = 150; this.height = 120; this.velocity.x = 0; this.life = 15; this.damage = 35; 
@@ -275,7 +290,8 @@
                         this.position.y = this.owner.position.y;
                         break;
                     case 'blizzard':
-                        this.width = 140; this.height = 100; this.damage = 15; this.life = 30; this.stunDuration = 45; 
+                        this.width = 140; this.height = 100; this.damage = 15; this.life = 30; 
+                        this.stunDuration = 72; // 凍結スタン 1.2秒 (60fps * 1.2 = 72)
                         this.velocity.x = this.facingRight ? 10 : -10;
                         this.position.y = this.owner.position.y;
                         break;
@@ -284,17 +300,14 @@
                         this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
                         this.position.y = this.owner.position.y - 10;
                         break;
-                    // 人狼の突進に伴う爪エフェクト
                     case 'claw': 
                         this.width = 90; this.height = 100; this.velocity.x = 0; this.life = 15; this.damage = 18; 
                         break;
-                    // 猪八戒の新スキル: 釘鈀(熊手)
                     case 'rake':
-                        this.width = 120; this.height = 140; this.velocity.x = 0; this.life = 20; this.damage = 28;
+                        this.width = 120; this.height = 140; this.velocity.x = 0; this.life = 30; this.damage = 21;
                         this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
                         this.position.y = this.owner.position.y - 20;
                         break;
-                    // 哪吒の新スキル: 槍突進
                     case 'spear_dash':
                         this.width = 140; this.height = 80; this.velocity.x = 0; this.life = 20; this.damage = 22;
                         this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
@@ -433,30 +446,39 @@
                     c.beginPath(); c.arc(this.position.x + this.width/2, this.position.y + this.height/2, this.width/2, 0, Math.PI*2); c.fill(); 
                 }
                 else if (this.type === 'thunder') {
-                    c.shadowBlur = 40; c.shadowColor = '#fef08a'; 
+                    c.shadowBlur = 30; c.shadowColor = '#fef08a'; 
                     
+                    // 中距離の雷撃残像エフェクト
+                    this.history.forEach((pos, idx) => {
+                        const alpha = idx / this.history.length;
+                        c.fillStyle = `rgba(254, 240, 138, ${alpha * 0.3})`;
+                        c.fillRect(pos.x, pos.y + this.height/4, this.width, this.height/2);
+                    });
+
                     c.strokeStyle = (this.frames % 4 < 2) ? '#ffffff' : '#fef08a'; 
-                    c.lineWidth = 15 + Math.random() * 10;
+                    c.lineWidth = 10 + Math.random() * 8;
                     c.lineJoin = 'miter';
                     
-                    c.beginPath(); c.moveTo(this.position.x + this.width/2, 0);
-                    let currentY = 0;
-                    while(currentY < canvas.height) {
-                        currentY += 40 + Math.random() * 40;
-                        const currentX = this.position.x + this.width/2 + (Math.random() - 0.5) * 60;
-                        c.lineTo(currentX, currentY);
+                    // 横方向のメイン稲妻
+                    c.beginPath(); c.moveTo(this.position.x, this.position.y + this.height/2);
+                    let currentX = this.position.x;
+                    while(currentX < this.position.x + this.width) {
+                        currentX += 30 + Math.random() * 20;
+                        const currentY = this.position.y + this.height/2 + (Math.random() - 0.5) * 60;
+                        c.lineTo(Math.min(currentX, this.position.x + this.width), currentY);
                     }
                     c.stroke();
                     
+                    // 枝分かれする細い稲妻
                     for(let j=0; j<3; j++) {
-                        c.strokeStyle = '#fef08a'; c.lineWidth = 3 + Math.random() * 5;
+                        c.strokeStyle = '#fef08a'; c.lineWidth = 2 + Math.random() * 4;
                         c.beginPath();
-                        let startY = Math.random() * canvas.height;
-                        c.moveTo(this.position.x + this.width/2, startY);
-                        let subY = startY; let subX = this.position.x + this.width/2;
-                        for(let k=0; k<4; k++) {
-                            subY += 20 + Math.random() * 30;
-                            subX += (Math.random() - 0.5) * 100;
+                        let startX = this.position.x + Math.random() * (this.width / 2);
+                        c.moveTo(startX, this.position.y + this.height/2);
+                        let subX = startX; let subY = this.position.y + this.height/2;
+                        for(let k=0; k<3; k++) {
+                            subX += 20 + Math.random() * 30;
+                            subY += (Math.random() - 0.5) * 60;
                             c.lineTo(subX, subY);
                         }
                         c.stroke();
@@ -591,7 +613,6 @@
                         c.fill();
                     }
                 }
-                // 猪八戒の新しい釘鈀(熊手)アニメーション
                 else if (this.type === 'rake') {
                     c.shadowBlur = 15; c.shadowColor = '#fbcfe8'; 
                     const cx = this.facingRight ? this.position.x : this.position.x + this.width;
@@ -599,7 +620,7 @@
                     
                     c.save();
                     c.translate(cx, cy);
-                    const progress = 1 - (this.life / 20);
+                    const progress = 1 - (this.life / 30);
                     let angle = this.facingRight ? (-Math.PI/2 + progress * Math.PI) : (Math.PI/2 - progress * Math.PI);
                     c.rotate(angle);
                     
@@ -615,13 +636,12 @@
                     c.restore();
 
                     c.beginPath();
-                    c.strokeStyle = `rgba(251, 207, 232, ${this.life / 20})`;
+                    c.strokeStyle = `rgba(251, 207, 232, ${this.life / 30})`;
                     c.lineWidth = 15;
                     c.lineCap = 'round';
                     c.arc(cx, cy, 90, this.facingRight ? -Math.PI/2 : Math.PI/2, this.facingRight ? angle : angle, this.facingRight ? false : true);
                     c.stroke();
                 }
-                // 哪吒の槍と炎の突進エフェクト
                 else if (this.type === 'spear_dash') {
                     c.shadowBlur = 20; c.shadowColor = '#ef4444';
                     const cx = this.facingRight ? this.position.x : this.position.x + this.width;
@@ -735,7 +755,6 @@
                 this.isFrozen = false; 
                 this.isGuarding = false; 
                 
-                // 突進（ダッシュ）用タイマー
                 this.dashTimer = 0;
             }
 
@@ -748,7 +767,6 @@
                 const offsetX = (spriteWidth - this.width) / 2;
                 const offsetY = (this.sprite.length * this.spriteScale - this.height);
                 
-                // 人狼のダッシュ時の残像エフェクト
                 if (this.dashTimer > 0) {
                     for(let i=1; i<=3; i++) {
                         c.globalAlpha = 0.4 / i;
@@ -785,11 +803,10 @@
                 this.attackBox.position.y = this.position.y + (this.height * 0.3);
                 this.attackBox.position.x = this.facingRight ? this.position.x + this.width : this.position.x - this.attackBox.width;
 
-                // 突進時の強制移動
                 if (this.dashTimer > 0) {
                     this.dashTimer--;
                     this.velocity.x = this.facingRight ? 25 : -25;
-                    this.velocity.y = 0; // 重力無効で水平突進
+                    this.velocity.y = 0; 
                     this.isGuarding = false;
                 } else if (this.stunTimer > 0) {
                     this.stunTimer--;
@@ -823,8 +840,10 @@
                 if(this.attackCooldown || this.stunTimer > 0 || this.isGuarding) return;
                 this.isAttacking = true;
                 this.attackCooldown = true;
-                setTimeout(() => { this.isAttacking = false; }, 100);
-                setTimeout(() => { this.attackCooldown = false; }, 400);
+                const duration = characterData[this.charId].atkDuration || 100;
+                const cooldown = characterData[this.charId].atkCooldown || 400;
+                setTimeout(() => { this.isAttacking = false; }, duration);
+                setTimeout(() => { this.attackCooldown = false; }, cooldown);
             }
 
             useSuperPower() {
@@ -858,13 +877,8 @@
                         startX = this.facingRight ? this.position.x + this.width : this.position.x - 140;
                     }
 
-                    // 人狼、哪吒の突進トリガー
-                    if(this.spType === 'claw') {
-                        this.dashTimer = 15;
-                    }
-                    if(this.spType === 'spear_dash') {
-                        this.dashTimer = 20;
-                    }
+                    if(this.spType === 'claw') this.dashTimer = 15;
+                    if(this.spType === 'spear_dash') this.dashTimer = 20;
 
                     projectiles.push(new Projectile({
                         position: { x: startX, y: this.position.y + (this.height * 0.2) },
@@ -878,6 +892,7 @@
 
             takeDamage(amount) {
                 this.health -= amount;
+                if(this.health < 0) this.health = 0;
                 this.updateUI();
             }
 
@@ -938,6 +953,20 @@
         // --- ゲームの進行管理 ---
         let player1, player2, timer = 60, timerId;
 
+        function updateWinMarkers() {
+            let p1HTML = '';
+            for(let i=0; i<2; i++) {
+                p1HTML += `<div class="w-5 h-5 rounded-full border-2 border-yellow-400 ${i < p1Wins ? 'bg-yellow-400 shadow-[0_0_8px_#facc15]' : 'bg-transparent'}"></div>`;
+            }
+            document.getElementById('p1-wins').innerHTML = p1HTML;
+
+            let p2HTML = '';
+            for(let i=0; i<2; i++) {
+                p2HTML += `<div class="w-5 h-5 rounded-full border-2 border-yellow-400 ${i < p2Wins ? 'bg-yellow-400 shadow-[0_0_8px_#facc15]' : 'bg-transparent'}"></div>`;
+            }
+            document.getElementById('p2-wins').innerHTML = p2HTML;
+        }
+
         function initSelectScreen() {
             const container = document.getElementById('char-list');
             container.innerHTML = '';
@@ -988,7 +1017,11 @@
         }
 
         function startGame() {
-            gameState = 'PLAYING';
+            p1Wins = 0;
+            p2Wins = 0;
+            currentRound = 1;
+            updateWinMarkers();
+
             document.getElementById('character-select').classList.add('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
             canvas.focus();
@@ -998,10 +1031,57 @@
 
             document.getElementById('player-name').innerText = characterData[p1CharId].name;
             document.getElementById('enemy-name').innerText = characterData[p2CharId].name + (gameMode === 'CPU' ? ' (CPU)' : ' (2P)');
+            
+            startNextRound();
+        }
+
+        function startNextRound() {
+            // キーリセット（ラウンド間の入力維持を防止）
+            keys.a = false; keys.d = false; keys.w = false; keys.s = false;
+            keys.ArrowLeft = false; keys.ArrowRight = false; keys.ArrowUp = false; keys.ArrowDown = false;
+
+            // 初期位置
+            player1.position = { x: 150, y: 0 };
+            player1.velocity = { x: 0, y: 0 };
+            player1.facingRight = true;
+            
+            player2.position = { x: 800, y: 0 };
+            player2.velocity = { x: 0, y: 0 };
+            player2.facingRight = false;
+
+            // ステータスリセット
+            player1.health = player1.maxHealth;
+            player1.mana = 100;
+            player1.stunTimer = 0;
+            player1.isFrozen = false;
+            player1.isGuarding = false;
+            player1.dashTimer = 0;
+            
+            player2.health = player2.maxHealth;
+            player2.mana = 100;
+            player2.stunTimer = 0;
+            player2.isFrozen = false;
+            player2.isGuarding = false;
+            player2.dashTimer = 0;
+
             player1.updateUI();
             player2.updateUI();
+            projectiles.length = 0; 
+            
+            gameState = 'ROUND_STARTING';
 
-            decreaseTimer();
+            const roundUI = document.getElementById('round-announcement');
+            const roundText = document.getElementById('round-text');
+            roundUI.classList.remove('hidden');
+            roundText.innerHTML = `ROUND ${currentRound}<br><span class="text-4xl md:text-6xl text-red-500 mt-4 block">FIGHT!</span>`;
+            
+            setTimeout(() => {
+                roundUI.classList.add('hidden');
+                gameState = 'PLAYING';
+                timer = 60;
+                document.getElementById('timer').innerText = timer;
+                decreaseTimer();
+            }, 1500);
         }
 
         function decreaseTimer() {
@@ -1010,26 +1090,59 @@
                 timer--;
                 document.getElementById('timer').innerText = timer;
             }
-            if (timer === 0) determineWinner();
+            if (timer === 0 && gameState === 'PLAYING') determineWinner();
         }
 
         function determineWinner() {
             clearTimeout(timerId);
-            gameState = 'GAMEOVER';
-            const resultScreen = document.getElementById('result');
-            resultScreen.style.display = 'flex';
-            const resultText = document.getElementById('result-text');
+            gameState = 'ROUND_OVER';
             
-            if (player1.health === player2.health) {
-                resultText.innerHTML = 'DRAW';
-                resultText.className = 'text-6xl md:text-8xl font-bold text-yellow-400 mb-8 pixel-text';
-            } else if (player1.health > player2.health) { 
-                resultText.innerHTML = '1P WIN!'; 
-                resultText.className = 'text-6xl md:text-8xl font-bold text-red-400 mb-8 pixel-text';
-            } else { 
-                resultText.innerHTML = gameMode === 'CPU' ? 'CPU WIN...' : '2P WIN!'; 
-                resultText.className = 'text-6xl md:text-8xl font-bold text-blue-400 mb-8 pixel-text';
+            let roundWinner = 0;
+            if (player1.health > player2.health) {
+                roundWinner = 1;
+                p1Wins++;
+            } else if (player2.health > player1.health) {
+                roundWinner = 2;
+                p2Wins++;
             }
+
+            updateWinMarkers();
+
+            const roundUI = document.getElementById('round-announcement');
+            const roundText = document.getElementById('round-text');
+            roundUI.classList.remove('hidden');
+            
+            roundText.innerHTML = (timer === 0) ? '<span class="text-yellow-400">TIME UP</span>' : '<span class="text-red-500">K.O.</span>';
+
+            setTimeout(() => {
+                if (p1Wins >= 2 || p2Wins >= 2) {
+                    // マッチ終了
+                    gameState = 'GAMEOVER';
+                    roundUI.classList.add('hidden');
+                    const resultScreen = document.getElementById('result');
+                    resultScreen.style.display = 'flex';
+                    const resultText = document.getElementById('result-text');
+                    
+                    if (p1Wins >= 2) {
+                        resultText.innerHTML = '1P WINS MATCH!';
+                        resultText.className = 'text-5xl md:text-7xl font-bold text-red-400 mb-8 pixel-text';
+                    } else if (p2Wins >= 2) { 
+                        resultText.innerHTML = gameMode === 'CPU' ? 'CPU WINS MATCH...' : '2P WINS MATCH!'; 
+                        resultText.className = 'text-5xl md:text-7xl font-bold text-blue-400 mb-8 pixel-text';
+                    }
+                } else {
+                    // ラウンド結果表示後に次のラウンドへ
+                    if (roundWinner === 1) roundText.innerHTML = '<span class="text-red-400">1P WIN</span>';
+                    else if (roundWinner === 2) roundText.innerHTML = '<span class="text-blue-400">2P WIN</span>';
+                    else roundText.innerHTML = '<span class="text-gray-400">DRAW</span>';
+                    
+                    setTimeout(() => {
+                        roundUI.classList.add('hidden');
+                        currentRound++;
+                        startNextRound();
+                    }, 2000);
+                }
+            }, 2000);
         }
 
         function rectangularCollision({ rect1, rect2 }) {
@@ -1090,7 +1203,6 @@
             // 1P Movement & Guard
             if(gameState === 'PLAYING' && player1.stunTimer <= 0) {
                 player1.isGuarding = keys.s;
-                // 突進中でなければキーによる移動を許可
                 if(player1.dashTimer <= 0) {
                     player1.velocity.x = 0;
                     if (!player1.isGuarding) {
@@ -1138,7 +1250,6 @@
 
                     if(gameState === 'PLAYING') {
                         if (target.isGuarding) {
-                            // ガード時はダメージを大幅にカット（20%のみ通る）、スタン等の追加効果無効
                             target.takeDamage(p.damage * 0.2);
                         } else {
                             if (p.type === 'thunder') target.stunTimer = p.stunDuration;
@@ -1152,30 +1263,22 @@
                 if (p.markedForDeletion) projectiles.splice(i, 1);
             }
 
-            if(gameState === 'GAMEOVER') return;
-
             // 近接攻撃の当たり判定
-            if (player1.isAttacking && rectangularCollision({ rect1: player1.attackBox, rect2: player2 })) {
-                player1.isAttacking = false; 
-                if (player2.isGuarding) {
-                    player2.takeDamage(player1.attackDamage * 0.2);
-                } else {
-                    player2.takeDamage(player1.attackDamage);
-                    player1.heal(3);
+            if(gameState === 'PLAYING') {
+                if (player1.isAttacking && rectangularCollision({ rect1: player1.attackBox, rect2: player2 })) {
+                    player1.isAttacking = false; 
+                    if (player2.isGuarding) player2.takeDamage(player1.attackDamage * 0.2);
+                    else { player2.takeDamage(player1.attackDamage); player1.heal(3); }
                 }
-            }
-            if (player2.isAttacking && rectangularCollision({ rect1: player2.attackBox, rect2: player1 })) {
-                player2.isAttacking = false;
-                if (player1.isGuarding) {
-                    player1.takeDamage(player2.attackDamage * 0.2);
-                } else {
-                    player1.takeDamage(player2.attackDamage);
-                    player2.heal(3);
+                if (player2.isAttacking && rectangularCollision({ rect1: player2.attackBox, rect2: player1 })) {
+                    player2.isAttacking = false;
+                    if (player1.isGuarding) player1.takeDamage(player2.attackDamage * 0.2);
+                    else { player1.takeDamage(player2.attackDamage); player2.heal(3); }
                 }
-            }
 
-            // 勝敗判定
-            if (player2.health <= 0 || player1.health <= 0) determineWinner();
+                // HP0による勝敗判定
+                if (player2.health <= 0 || player1.health <= 0) determineWinner();
+            }
         }
 
         // タイトルへ戻る処理
@@ -1185,6 +1288,10 @@
             player2 = null;
             projectiles.length = 0;
             timer = 60;
+            p1Wins = 0;
+            p2Wins = 0;
+            currentRound = 1;
+            updateWinMarkers();
             
             document.getElementById('result').style.display = 'none';
             document.getElementById('game-ui').classList.add('hidden');
