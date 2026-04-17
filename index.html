@@ -260,17 +260,17 @@
                 this.frames = 0;
                 this.life = 0;
                 this.history = []; 
-                this.isAltColor = owner.isAltColor; // 2Pカラー引き継ぎ
+                this.isAltColor = owner.isAltColor || false;
                 
                 switch(this.type) {
                     case 'tornado': this.width = 70; this.height = 140; this.position.y = this.owner.position.y - 20; this.damage = 15; break;
                     case 'wave': this.width = 30; this.height = 80; this.position.y = groundLevel - this.height; this.damage = 25; break;
-                    case 'bat': this.width = 20; this.height = 15; this.damage = 4; break; //蝙蝠1/3サイズ＆威力分散
+                    case 'bat': this.width = 20; this.height = 15; this.damage = 4; break; 
                     case 'pole': this.width = 350; this.height = 20; this.velocity.x = 0; this.position.y += 20; this.life = 15; this.damage = 15; if(!this.facingRight) this.position.x = this.owner.position.x - this.width; break;
                     case 'water': this.width = 25; this.height = 25; this.velocity.y = -5; this.damage = 10; break;
                     case 'thunder': 
                         this.width = 150; this.height = 80; this.velocity.x = this.facingRight ? 12 : -12; 
-                        this.life = 25; this.damage = 15; this.stunDuration = 120; // 2秒間麻痺
+                        this.life = 25; this.damage = 15; this.stunDuration = 120; 
                         this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
                         this.position.y = this.owner.position.y + 10;
                         break;
@@ -292,7 +292,7 @@
                         break;
                     case 'blizzard':
                         this.width = 140; this.height = 100; this.damage = 15; this.life = 30; 
-                        this.stunDuration = 72; // 凍結スタン 1.2秒 (60fps * 1.2 = 72)
+                        this.stunDuration = 72; 
                         this.velocity.x = this.facingRight ? 10 : -10;
                         this.position.y = this.owner.position.y;
                         break;
@@ -319,7 +319,7 @@
 
             draw() {
                 c.save();
-                if (this.isAltColor) c.filter = 'hue-rotate(180deg)'; // 2Pカラーフィルター
+                if (this.isAltColor) c.filter = 'hue-rotate(180deg)';
                 c.shadowBlur = 20;
 
                 if (this.type === 'tornado') { 
@@ -450,7 +450,6 @@
                 else if (this.type === 'thunder') {
                     c.shadowBlur = 30; c.shadowColor = '#fef08a'; 
                     
-                    // 中距離の雷撃残像エフェクト
                     this.history.forEach((pos, idx) => {
                         const alpha = idx / this.history.length;
                         c.fillStyle = `rgba(254, 240, 138, ${alpha * 0.3})`;
@@ -678,7 +677,7 @@
                     c.restore();
                 }
 
-                c.restore(); // color filter reset
+                c.restore();
             }
 
             update() {
@@ -756,7 +755,7 @@
                 this.isGuarding = false; 
                 
                 this.dashTimer = 0;
-                this.isAltColor = false; // 2P色違いフラグ
+                this.isAltColor = false; 
             }
 
             draw() {
@@ -764,7 +763,7 @@
                 if (this.stunTimer > 0 && this.stunTimer % 10 < 5) c.globalAlpha = 0.5;
                 if (this.isFrozen) c.fillStyle = 'rgba(186, 230, 253, 0.5)'; 
                 
-                if (this.isAltColor) c.filter = 'hue-rotate(180deg)'; // 2Pカラーフィルター
+                if (this.isAltColor) c.filter = 'hue-rotate(180deg)';
                 
                 const rowLength = this.sprite[0].length;
                 const spriteWidth = rowLength * this.spriteScale;
@@ -783,7 +782,7 @@
                 
                 if (this.isFrozen) c.fillRect(this.position.x - offsetX, this.position.y - offsetY, spriteWidth, this.sprite.length * this.spriteScale);
                 
-                c.filter = 'none'; // リセットしてバリアなどは通常色に
+                c.filter = 'none';
 
                 if (this.isGuarding) {
                     c.strokeStyle = 'rgba(56, 189, 248, 0.8)';
@@ -887,12 +886,11 @@
                     if(this.spType === 'claw') this.dashTimer = 15;
                     if(this.spType === 'spear_dash') this.dashTimer = 20;
 
-                    // ヴァンパイアの蝙蝠3WAY化
                     if(this.spType === 'bat') {
                         for(let i = -1; i <= 1; i++) {
                             projectiles.push(new Projectile({
                                 position: { x: startX + (i*10), y: this.position.y + (this.height * 0.2) + i*20 },
-                                velocity: { x: projVelX, y: projVelY + i*3 },
+                                velocity: { x: projVelX, y: projVelY + i*3 }, 
                                 facingRight: this.facingRight,
                                 type: this.spType,
                                 owner: this
@@ -1050,7 +1048,6 @@
             player1 = new Fighter({ position: { x: 150, y: 0 }, velocity: { x: 0, y: 0 }, charId: p1CharId, isPlayer1: true });
             player2 = new Fighter({ position: { x: 800, y: 0 }, velocity: { x: 0, y: 0 }, charId: p2CharId, isPlayer1: false });
 
-            // 同キャラ対戦時の2Pカラーを適用
             if (p1CharId === p2CharId) {
                 player2.isAltColor = true;
             }
@@ -1062,7 +1059,6 @@
         }
 
         function startNextRound() {
-            // キーリセット
             keys.a = false; keys.d = false; keys.w = false; keys.s = false;
             keys.ArrowLeft = false; keys.ArrowRight = false; keys.ArrowUp = false; keys.ArrowDown = false;
 
@@ -1087,7 +1083,6 @@
             player2.isFrozen = false;
             player2.isGuarding = false;
             player2.dashTimer = 0;
-            // player2.isAltColor はそのまま維持される
 
             player1.updateUI();
             player2.updateUI();
