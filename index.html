@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>妖魔覇戦 - YOMA HASEN</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        canvas:focus { outline: none; }
+        body {
+            font-family: 'DotGothic16', sans-serif;
+            background-color: #0f172a;
+        }
+        .pixel-text {
+            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center h-screen m-0 overflow-hidden text-white relative select-none">
+
+    <!-- タイトル＆モード選択画面 -->
+    <div id="title-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-40 transition-opacity duration-500 overflow-y-auto py-10 pixel-text">
+        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 30px 30px;"></div>
+        
+        <h1 class="text-7xl md:text-9xl text-red-600 font-black mb-2 tracking-widest text-center relative z-10" style="text-shadow: 4px 4px 0 #000, 0px 0px 20px rgba(220,38,38,0.8);">妖魔覇戦</h1>
+        <p class="text-xl md:text-2xl text-yellow-400 mb-12 tracking-[0.5em] relative z-10">YOMA HASEN</p>
+
+        <div class="flex flex-col gap-5 relative z-10">
+            <button onclick="selectMode('CPU')" class="px-12 py-4 bg-red-700 text-white font-bold text-2xl rounded border-4 border-red-900 hover:bg-red-500 hover:scale-105 transition-all shadow-lg">
+                1P VS CPU (一人用)
+            </button>
+            <button onclick="selectMode('PVP')" class="px-12 py-4 bg-blue-700 text-white font-bold text-2xl rounded border-4 border-blue-900 hover:bg-blue-500 hover:scale-105 transition-all shadow-lg">
+                1P VS 2P (二人対戦)
+            </button>
+        </div>
+
+        <div class="mt-8 bg-gray-800 border-2 border-gray-600 p-4 rounded text-sm text-gray-400">
+            <p class="mb-1"><span class="text-yellow-400">1P操作:</span> [WASD] 移動・ジャンプ | <span class="text-red-400 font-bold">[G]</span> パンチ | <span class="text-red-400 font-bold">[H]</span> 必殺技(MP消費)</p>
+            <p><span class="text-yellow-400">2P操作:</span> [矢印キー] 移動・ジャンプ | <span class="text-blue-400 font-bold">[ , ] (読点)</span> パンチ | <span class="text-blue-400 font-bold">[ . ] (句点)</span> 必殺技(MP消費)</p>
+        </div>
+    </div>
+
+    <!-- キャラクター選択画面 -->
+    <div id="character-select" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-30 transition-opacity duration-500 overflow-y-auto py-10 hidden">
+        <h1 id="select-title" class="text-4xl md:text-5xl text-yellow-400 font-bold mb-6 tracking-widest text-center pixel-text">1P キャラクター選択</h1>
+        <div id="char-list" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8 max-w-6xl px-4">
+            <!-- JSで動的に生成します -->
+        </div>
+    </div>
+
+    <!-- UI レイヤー -->
+    <div id="game-ui" class="absolute top-4 left-0 w-full flex justify-between px-8 z-10 pointer-events-none hidden">
+        
+        <!-- プレイヤー1 UI -->
+        <div class="w-5/12 flex flex-col">
+            <div id="player-name" class="text-lg font-bold text-blue-400 mb-1 pixel-text">PLAYER 1</div>
+            <div class="w-full bg-red-900 h-6 border-4 border-gray-400 relative flex justify-end">
+                <div id="player-hp" class="bg-green-400 h-full w-full transition-all duration-200"></div>
+            </div>
+            <div class="w-full bg-gray-700 h-3 border-x-4 border-b-4 border-gray-400 relative">
+                <div id="player-mp" class="bg-cyan-400 h-full w-full transition-all duration-75"></div>
+            </div>
+        </div>
+
+        <!-- タイマー -->
+        <div id="timer" class="text-4xl font-bold text-white flex items-center justify-center w-24 bg-gray-800 border-4 border-gray-400 pb-1 pixel-text">60</div>
+
+        <!-- プレイヤー2/CPU UI -->
+        <div class="w-5/12 flex flex-col items-end">
+            <div id="enemy-name" class="text-lg font-bold text-red-500 mb-1 pixel-text">ENEMY</div>
+            <div class="w-full bg-red-900 h-6 border-4 border-gray-400 relative flex justify-start">
+                <div id="enemy-hp" class="bg-green-400 h-full w-full transition-all duration-200"></div>
+            </div>
+            <div class="w-full bg-gray-700 h-3 border-x-4 border-b-4 border-gray-400 relative flex justify-start">
+                <div id="enemy-mp" class="bg-cyan-400 h-full w-full transition-all duration-75"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- リザルト画面 -->
+    <div id="result" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden bg-black bg-opacity-80 tracking-widest pixel-text">
+        <div id="result-text" class="text-6xl md:text-8xl font-bold text-yellow-400 mb-8"></div>
+        <button onclick="resetToTitle()" class="px-8 py-3 bg-gray-700 text-white font-bold text-xl rounded border-4 border-gray-500 hover:bg-gray-600 hover:border-white transition-all">
+            タイトルに戻る
+        </button>
+    </div>
+
+    <canvas id="gameCanvas" width="1024" height="576" class="bg-gray-800 shadow-2xl rounded border-4 border-gray-600" tabindex="0"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const c = canvas.getContext('2d');
+        window.onload = () => canvas.focus();
+
+        canvas.width = 1024;
+        canvas.height = 576;
+        const gravity = 0.8;
+        const groundLevel = canvas.height - 50;
+
+        // カラーパレット拡張 (新キャラ用の色追加)
+        const palette = {
+            'K': '#000000', 'W': '#ffffff', 'R': '#ef4444', 'G': '#22c55e', 
+            'B': '#3b82f6', 'Y': '#eab308', 'P': '#a855f7', 'S': '#fcd34d', 
+            'C': '#92400e', 'D': '#78350f', 'M': '#9ca3af', 'O': '#b91c1c',
+            'F': '#f97316', 'V': '#f472b6', 'E': '#fbcfe8',
+            'I': '#38bdf8', 'U': '#0284c7', 'X': '#fdf2f8', 'Z': '#f472b6', '1': '#be185d', 
+            'J': '#be123c', 'H': '#fde047', 'N': '#fed7aa'
+        };
+
+        const sprites = {
+            tengu: ["___KKK______","___KKK______","__RRRR______","_RRWRWR_____","_RRRRRRRRR__","__RRRR______","__MMMM______","__WM_MW_____","__MMMM______","__KKKK______","__K__K______","__K__K______"],
+            oni: ["___W________","__RRRR______","_RRWRWR_____","_RRRRRR_____","__RRRR______","__RRRR______","__YKYK______","__KYKY______","__RRRR______","__R__R______","__R__R______","__K__K______"],
+            vampire: ["____KKKK____","___KWWWWK___","___WWRWRW___","___WWWWWW___","____WWWW____","____KKKK____","_KKKRRRRKKK_","KKKKRKKRKKKK","KKKKKKKKKKKK","KKKK____KKKK","___K____K___","___K____K___"],
+            werewolf: ["__C___C_____","_CCCCCCC____","_CCWCWCCC___","_CCCCCCCCC__","__CCWWCC____","__DDDDDD____","_DDDDDDDD___","_DDDDDDDD___","__CCCCCC____","__CC__CC____","__C____C____","__C____C____"],
+            wukong: ["____________","____YYYY____","___CWCWC____","___CCCCCCC__","___SSSSSS___","____RRRR____","__RRRRRRRR__","YYYRRYYRRYYY","___YYYYYY___","____K__K____","____K__K____","____K__K____"],
+            kappa: ["____________","___GLLLG____","__GGGGGGG___","_GGGWWGGG___","_GGGYYYGG___","___YYGG_____","__GMMMMG____","_GGMMMMGG___","_GGMMMMGG___","__GG__GG____","__G____G____","__G____G____"],
+            raijin: ["_Y________Y_","__Y__YY__Y__","____KWWK____","___KYWYYK___","___KYYYYK___","___KKKKKK___","__MMMMMMMM__","__MMKMMKMM__","_KKMMMMMMKK_","___K____K___","___K____K___","__KK____KK__"],
+            fujin: ["_G________G_","__G__GG__G__","____KWWK____","___KGWGGK___","___KGGGGK___","___KKKKKK___","__CCCCMMCC__","__CMCCMCCM__","_KKCCCCCCKK_","___M____M___","___M____M___","__MM____MM__"],
+            pig: ["____EEEE____","___EEEEEE___","__EWWEWWE___","__EEEEEEEE__","___EEEEEE___","__WWWWWWWW__","__WWWWWWWW__","__WWWWWWWW__","___EE__EE___","___E____E___","___E____E___","__EE____EE__"],
+            // 描き直した九尾の狐 (白・ピンク基調で美しく)
+            fox: [
+                "XX__XXXX__XX",
+                "XXX_XXXX_XXX",
+                "XXX_X11X_XXX",
+                "XXXX_ZZ_XXXX",
+                "XX_XXZZXX_XX",
+                "_X_XXXXXX_X_",
+                "_X_XXXXXX_X_",
+                "___X_XX_X___",
+                "__XX_XX_XX__",
+                "__X__XX__X__",
+                "_____XX_____",
+                "_____XX_____"
+            ],
+            // 新キャラ: 青龍
+            seiryu: [
+                "____I__I____",
+                "___IUUIUI___",
+                "___IWWII____",
+                "__IIIIII____",
+                "__II_III____",
+                "__I__II_I___",
+                "____IIIII___",
+                "___II_III___",
+                "__II___II___",
+                "__II___II___",
+                "__I_____I___",
+                "_II_____II__"
+            ],
+            // 新キャラ: 座敷童子
+            zashiki: [
+                "____KKKK____",
+                "___KKKKKK___",
+                "___KNK1NK___",
+                "___KNNNNK___",
+                "____JJJJ____",
+                "___JJHJJJ___",
+                "___J_JJ_J___",
+                "___J_JJ_J___",
+                "____NNNN____",
+                "____NNNN____",
+                "____N__N____",
+                "____K__K____"
+            ]
+        };
+
+        function drawPixelArt(ctx, spriteData, x, y, scale, facingRight) {
+            for (let row = 0; row < spriteData.length; row++) {
+                for (let col = 0; col < spriteData[row].length; col++) {
+                    const colorCode = spriteData[row][col];
+                    if (colorCode === '_') continue;
+                    ctx.fillStyle = palette[colorCode] || 'magenta';
+                    const drawCol = facingRight ? col : (spriteData[row].length - 1 - col);
+                    ctx.fillRect(x + drawCol * scale, y + row * scale, scale, scale);
+                }
+            }
+        }
+
+        // --- ゲーム状態とキャラクターデータ ---
+        let gameState = 'TITLE';
+        let gameMode = 'CPU'; 
+        let p1CharId = null;
+        let p2CharId = null;
+        let selectState = 1;
+
+        const keys = { 
+            a: false, d: false, w: false, 
+            ArrowLeft: false, ArrowRight: false, ArrowUp: false 
+        };
+
+        // gravityScale, width, height, spriteScale などの個別プロパティを追加
+        const characterData = {
+            'tengu': { name: '天狗', color: '#ef4444', speed: 7, jump: -20, health: 100, attackDamage: 8, spCost: 30, spType: 'tornado', desc: '空中戦が得意。竜巻を放つ。', sprite: sprites.tengu },
+            'oni': { name: '鬼', color: '#b91c1c', speed: 4, jump: -14, health: 100, attackDamage: 15, spCost: 40, spType: 'wave', desc: '圧倒的パワー。衝撃波を放つ。', sprite: sprites.oni },
+            'raijin': { name: '雷神', color: '#eab308', speed: 5, jump: -18, health: 100, attackDamage: 10, spCost: 70, spType: 'thunder', desc: 'MP大消費。広範囲の雷で相手を麻痺させる。', sprite: sprites.raijin },
+            'fujin': { name: '風神', color: '#22c55e', speed: 8, jump: -19, health: 100, attackDamage: 10, spCost: 60, spType: 'wind_blast', desc: 'MP大消費。近距離に大ダメージの神風を放つ。', sprite: sprites.fujin },
+            'fox': { name: '九尾の狐', color: '#f472b6', speed: 12, jump: -18, health: 70, attackDamage: 18, spCost: 35, spType: 'fireball', desc: '超速・高火力だがHPが低い。火球を放つ。', sprite: sprites.fox },
+            'pig': { name: '猪八戒', color: '#fbcfe8', speed: 4, jump: -12, health: 160, attackDamage: 12, spCost: 30, spType: 'earth', desc: 'HPが非常に高い。岩を放物線状に投げる。', sprite: sprites.pig },
+            'vampire': { name: '吸血鬼', color: '#7e22ce', speed: 6, jump: -16, health: 100, attackDamage: 10, spCost: 35, spType: 'bat', desc: '攻撃ヒット時に少しHPを吸収する。', sprite: sprites.vampire },
+            'werewolf': { name: '人狼', color: '#92400e', speed: 10, jump: -15, health: 100, attackDamage: 12, spCost: 20, spType: 'claw', desc: '超スピード。前方に鋭い爪の連撃。', sprite: sprites.werewolf },
+            'wukong': { name: '孫悟空', color: '#eab308', speed: 8, jump: -18, health: 100, attackDamage: 9, spCost: 30, spType: 'pole', desc: '通常リーチ長め。如意棒を伸ばす。', sprite: sprites.wukong },
+            'kappa': { name: '河童', color: '#22c55e', speed: 6, jump: -16, health: 100, attackDamage: 8, spCost: 15, spType: 'water', desc: '燃費が良く、水球を連射可能。', sprite: sprites.kappa },
+            'seiryu': { name: '青龍', color: '#0ea5e9', speed: 9, jump: -22, health: 100, attackDamage: 11, spCost: 40, spType: 'dragon_beam', desc: '滞空時間が非常に長い。空中から水龍波。', sprite: sprites.seiryu, gravityScale: 0.4 },
+            'zashiki': { name: '座敷童子', color: '#be123c', speed: 6, jump: -15, health: 90, attackDamage: 9, spCost: 25, spType: 'flower', desc: '小柄で攻撃が当たりにくい。可愛い花吹雪。', sprite: sprites.zashiki, width: 45, height: 80, spriteScale: 8 }
+        };
+
+        // モード選択
+        function selectMode(mode) {
+            gameMode = mode;
+            document.getElementById('title-screen').classList.add('hidden');
+            document.getElementById('character-select').classList.remove('hidden');
+            selectState = 1;
+            document.getElementById('select-title').innerText = "1P キャラクター選択";
+            document.getElementById('select-title').className = "text-4xl md:text-5xl font-bold mb-6 tracking-widest text-center pixel-text text-yellow-400";
+            initSelectScreen();
+        }
+
+        // --- クラス定義 ---
+        class Projectile {
+            constructor({ position, velocity, facingRight, type, owner }) {
+                this.position = position;
+                this.velocity = velocity;
+                this.facingRight = facingRight;
+                this.type = type;
+                this.owner = owner;
+                this.markedForDeletion = false;
+                this.hasHit = false; 
+                this.frames = 0;
+                this.life = 0;
+                this.history = []; 
+                
+                switch(this.type) {
+                    case 'tornado': this.width = 70; this.height = 140; this.position.y = this.owner.position.y - 20; this.damage = 15; break;
+                    case 'wave': this.width = 30; this.height = 80; this.position.y = groundLevel - this.height; this.damage = 25; break;
+                    case 'bat': this.width = 30; this.height = 20; this.damage = 12; break;
+                    case 'claw': this.width = 90; this.height = 100; this.velocity.x = 0; this.life = 15; this.damage = 18; break;
+                    case 'pole': this.width = 350; this.height = 20; this.velocity.x = 0; this.position.y += 20; this.life = 15; this.damage = 15; if(!this.facingRight) this.position.x = this.owner.position.x - this.width; break;
+                    case 'water': this.width = 25; this.height = 25; this.velocity.y = -5; this.damage = 10; break;
+                    case 'thunder': 
+                        this.width = 80; this.height = canvas.height; this.velocity.x = 0; this.position.y = 0; 
+                        this.life = 20; this.damage = 12; this.stunDuration = 60; 
+                        this.position.x = this.facingRight ? this.owner.position.x + 200 : this.owner.position.x - 200 - this.width;
+                        break;
+                    case 'wind_blast':
+                        this.width = 150; this.height = 120; this.velocity.x = 0; this.life = 15; this.damage = 35; 
+                        this.position.x = this.facingRight ? this.owner.position.x + this.owner.width : this.owner.position.x - this.width;
+                        this.position.y = this.owner.position.y - 10;
+                        break;
+                    case 'fireball':
+                        this.width = 35; this.height = 35; this.damage = 22; 
+                        break;
+                    case 'earth':
+                        this.width = 40; this.height = 40; this.velocity.y = -8; this.damage = 18; 
+                        break;
+                    // 新スキル：青龍
+                    case 'dragon_beam':
+                        this.width = 60; this.height = 60; this.damage = 20; this.life = 100;
+                        break;
+                    // 新スキル：座敷童子
+                    case 'flower':
+                        this.width = 35; this.height = 35; this.damage = 15; this.life = 100;
+                        break;
+                }
+            }
+
+            draw() {
+                c.save();
+                c.shadowBlur = 20;
+
+                if (this.type === 'tornado') { 
+                    c.shadowColor = '#86efac'; 
+                    const grad = c.createLinearGradient(this.position.x, 0, this.position.x + this.width, 0);
+                    grad.addColorStop(0, 'rgba(134, 239, 172, 0.2)');
+                    grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
+                    grad.addColorStop(1, 'rgba(134, 239, 172, 0.2)');
+                    c.fillStyle = grad;
+                    
+                    for(let i=0; i<8; i++) { 
+                        const yOffset = i * 20;
+                        const widthOffset = Math.sin(this.frames * 0.2 + i) * 15; 
+                        const ellipseWidth = Math.max(10, this.width/2 - i*4 + 15 + widthOffset);
+                        
+                        c.beginPath(); 
+                        c.ellipse(
+                            this.position.x + this.width/2 + (Math.sin(this.frames * 0.3 + i) * 10), 
+                            this.position.y + this.height - yOffset, 
+                            ellipseWidth, 10 + (i*1.5), 0, 0, Math.PI*2
+                        ); 
+                        c.fill();
+                        c.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                        c.lineWidth = 2;
+                        c.stroke();
+                    } 
+                }
+                else if (this.type === 'wave') { 
+                    c.shadowColor = '#ef4444'; 
+                    this.history.forEach((pos, idx) => {
+                        const alpha = idx / this.history.length;
+                        c.fillStyle = `rgba(239, 68, 68, ${alpha * 0.5})`;
+                        c.fillRect(pos.x, pos.y + (this.height * (1-alpha))/2, this.width, this.height * alpha);
+                    });
+                    
+                    const grad = c.createLinearGradient(this.position.x, 0, this.position.x + this.width, 0);
+                    grad.addColorStop(0, 'rgba(239, 68, 68, 0)');
+                    grad.addColorStop(0.5, '#ef4444');
+                    grad.addColorStop(1, '#fef08a');
+                    c.fillStyle = grad; 
+                    
+                    c.beginPath();
+                    if(this.facingRight) {
+                        c.moveTo(this.position.x - 20, this.position.y);
+                        c.quadraticCurveTo(this.position.x + this.width + 20, this.position.y + this.height/2, this.position.x - 20, this.position.y + this.height);
+                        c.quadraticCurveTo(this.position.x + this.width/2, this.position.y + this.height/2, this.position.x - 20, this.position.y);
+                    } else {
+                        c.moveTo(this.position.x + this.width + 20, this.position.y);
+                        c.quadraticCurveTo(this.position.x - 20, this.position.y + this.height/2, this.position.x + this.width + 20, this.position.y + this.height);
+                        c.quadraticCurveTo(this.position.x + this.width/2, this.position.y + this.height/2, this.position.x + this.width + 20, this.position.y);
+                    }
+                    c.fill();
+                }
+                else if (this.type === 'bat') { 
+                    c.shadowColor = '#a855f7'; 
+                    this.history.forEach((pos, idx) => {
+                        const alpha = idx / this.history.length;
+                        c.fillStyle = `rgba(168, 85, 247, ${alpha * 0.4})`;
+                        c.beginPath(); c.arc(pos.x + 15, pos.y + 10 + Math.sin((this.frames - (this.history.length - idx))*0.5)*8, 8*alpha, 0, Math.PI*2); c.fill();
+                    });
+                    c.fillStyle = '#7e22ce'; 
+                    const yOff = Math.sin(this.frames*0.5)*8;
+                    c.beginPath(); c.arc(this.position.x + 15, this.position.y + 10 + yOff, 8, 0, Math.PI*2); c.fill(); 
+                    
+                    const wingSpread = Math.cos(this.frames*0.5)*15;
+                    c.beginPath();
+                    c.moveTo(this.position.x + 15, this.position.y + 10 + yOff);
+                    c.quadraticCurveTo(this.position.x - 10, this.position.y - wingSpread + yOff, this.position.x - 5, this.position.y - 5 + yOff);
+                    c.lineTo(this.position.x + 15, this.position.y + 10 + yOff);
+                    c.fill();
+                    c.beginPath();
+                    c.moveTo(this.position.x + 15, this.position.y + 10 + yOff);
+                    c.quadraticCurveTo(this.position.x + 40, this.position.y - wingSpread + yOff, this.position.x + 35, this.position.y - 5 + yOff);
+                    c.lineTo(this.position.x + 15, this.position.y + 10 + yOff);
+                    c.fill();
+                }
+                else if (this.type === 'claw') { 
+                    c.shadowColor = '#fbbf24'; 
+                    const alpha = this.life / 15;
+                    c.globalAlpha = alpha;
+                    c.lineCap = 'round';
+                    c.strokeStyle = '#fef08a';
+                    
+                    for(let i=0; i<3; i++) {
+                        c.lineWidth = 6 + (this.frames % 2); 
+                        c.beginPath();
+                        if(this.facingRight) {
+                            c.moveTo(this.position.x + 10 + i*20, this.position.y + 10 - i*15);
+                            c.quadraticCurveTo(this.position.x + 80 + i*10, this.position.y + 50, this.position.x + 30 + i*20, this.position.y + 110 - i*15);
+                        } else {
+                            c.moveTo(this.position.x + 80 - i*20, this.position.y + 10 - i*15);
+                            c.quadraticCurveTo(this.position.x + 10 - i*10, this.position.y + 50, this.position.x + 60 - i*20, this.position.y + 110 - i*15);
+                        }
+                        c.stroke();
+                    }
+                    c.globalAlpha = 1.0;
+                }
+                else if (this.type === 'pole') { 
+                    c.shadowColor = '#eab308'; 
+                    const grad = c.createLinearGradient(0, this.position.y, 0, this.position.y + this.height);
+                    grad.addColorStop(0, '#7f1d1d'); grad.addColorStop(0.5, '#ef4444'); grad.addColorStop(1, '#7f1d1d');
+                    c.fillStyle = grad; 
+                    c.fillRect(this.position.x, this.position.y, this.width, this.height); 
+                    
+                    c.fillStyle = '#fef08a';
+                    c.fillRect(this.position.x, this.position.y - 4, 30, this.height + 8);
+                    c.fillRect(this.position.x + this.width - 30, this.position.y - 4, 30, this.height + 8);
+
+                    if (this.life > 10) {
+                        c.beginPath(); c.strokeStyle = `rgba(253, 224, 71, ${(this.life - 10) / 5})`; c.lineWidth = 8;
+                        const endX = this.facingRight ? this.position.x + this.width : this.position.x;
+                        c.arc(endX, this.position.y + this.height/2, (15 - this.life) * 20, 0, Math.PI*2); c.stroke();
+                    }
+                }
+                else if (this.type === 'water') { 
+                    c.shadowColor = '#38bdf8'; 
+                    this.history.forEach((pos, idx) => {
+                        const alpha = idx / this.history.length;
+                        c.fillStyle = `rgba(56, 189, 248, ${alpha * 0.4})`;
+                        c.beginPath(); c.arc(pos.x + this.width/2, pos.y + this.height/2, (this.width/2)*alpha, 0, Math.PI*2); c.fill();
+                    });
+                    
+                    const grad = c.createRadialGradient(this.position.x + this.width/3, this.position.y + this.height/3, 2, this.position.x + this.width/2, this.position.y + this.height/2, this.width/2);
+                    grad.addColorStop(0, '#e0f2fe'); grad.addColorStop(0.4, '#0ea5e9'); grad.addColorStop(1, '#0369a1');
+                    c.fillStyle = grad; 
+                    c.beginPath(); c.arc(this.position.x + this.width/2, this.position.y + this.height/2, this.width/2, 0, Math.PI*2); c.fill(); 
+                }
+                else if (this.type === 'thunder') {
+                    c.shadowBlur = 40; c.shadowColor = '#fef08a'; 
+                    
+                    c.strokeStyle = (this.frames % 4 < 2) ? '#ffffff' : '#fef08a'; 
+                    c.lineWidth = 15 + Math.random() * 10;
+                    c.lineJoin = 'miter';
+                    
+                    c.beginPath(); c.moveTo(this.position.x + this.width/2, 0);
+                    let currentY = 0;
+                    while(currentY < canvas.height) {
+                        currentY += 40 + Math.random() * 40;
+                        const currentX = this.position.x + this.width/2 + (Math.random() - 0.5) * 60;
+                        c.lineTo(currentX, currentY);
+                    }
+                    c.stroke();
+                    
+                    for(let j=0; j<3; j++) {
+                        c.strokeStyle = '#fef08a'; c.lineWidth = 3 + Math.random() * 5;
+                        c.beginPath();
+                        let startY = Math.random() * canvas.height;
+                        c.moveTo(this.position.x + this.width/2, startY);
+                        let subY = startY; let subX = this.position.x + this.width/2;
+                        for(let k=0; k<4; k++) {
+                            subY += 20 + Math.random() * 30;
+                            subX += (Math.random() - 0.5) * 100;
+                            c.lineTo(subX, subY);
+                        }
+                        c.stroke();
+                    }
+                }
+                else if (this.type === 'wind_blast') {
+                    c.shadowBlur = 30; c.shadowColor = '#4ade80'; 
+                    const cx = this.position.x + this.width/2;
+                    const cy = this.position.y + this.height/2;
+                    
+                    c.save(); c.translate(cx, cy); c.rotate(this.frames * 0.5);
+                    
+                    for(let i=0; i<4; i++) {
+                        c.beginPath(); c.strokeStyle = `rgba(134, 239, 172, ${1 - this.frames/15})`;
+                        c.lineWidth = 8 + i*2; c.lineCap = 'round';
+                        c.arc(0, 0, 20 + i*20, i * Math.PI/2, i * Math.PI/2 + Math.PI);
+                        c.stroke();
+                    }
+                    
+                    c.fillStyle = `rgba(255, 255, 255, ${0.8 - this.frames/20})`;
+                    c.beginPath(); c.ellipse(0, 0, this.width/2, 10, 0, 0, Math.PI*2); c.fill();
+                    c.restore();
+                }
+                else if (this.type === 'fireball') {
+                    c.shadowBlur = 30; c.shadowColor = '#f97316'; 
+                    
+                    this.history.forEach((pos, idx) => {
+                        const alpha = idx / this.history.length;
+                        const size = (this.width/2) * alpha * (1 + Math.random()*0.3);
+                        c.fillStyle = `rgba(239, 68, 68, ${alpha})`;
+                        c.beginPath(); c.arc(pos.x + this.width/2, pos.y + this.height/2, size, 0, Math.PI*2); c.fill();
+                    });
+                    
+                    const grad = c.createRadialGradient(
+                        this.position.x + this.width/2, this.position.y + this.height/2, 0,
+                        this.position.x + this.width/2, this.position.y + this.height/2, this.width/2
+                    );
+                    grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.3, '#fef08a');
+                    grad.addColorStop(0.7, '#f97316'); grad.addColorStop(1, '#ef4444');
+                    c.fillStyle = grad;
+                    
+                    c.beginPath(); 
+                    const cx = this.position.x + this.width/2;
+                    const cy = this.position.y + this.height/2;
+                    const radius = this.width/2;
+                    for (let i = 0; i < Math.PI * 2; i += 0.5) {
+                        const r = radius + (Math.random() - 0.5) * 15;
+                        const x = cx + Math.cos(i) * r;
+                        const y = cy + Math.sin(i) * r;
+                        if (i === 0) c.moveTo(x, y);
+                        else c.lineTo(x, y);
+                    }
+                    c.closePath(); c.fill();
+                }
+                else if (this.type === 'earth') {
+                    c.shadowBlur = 10; c.shadowColor = '#451a03'; 
+                    const cx = this.position.x + this.width/2;
+                    const cy = this.position.y + this.height/2;
+                    
+                    c.save(); c.translate(cx, cy); c.rotate(this.frames * 0.2 * (this.velocity.x > 0 ? 1 : -1));
+                    
+                    c.fillStyle = '#78350f';
+                    c.beginPath();
+                    c.moveTo(-20, -15); c.lineTo(-5, -25); c.lineTo(15, -20); c.lineTo(25, 0); c.lineTo(15, 20); c.lineTo(-10, 25); c.lineTo(-25, 5);
+                    c.closePath(); c.fill();
+                    
+                    c.fillStyle = '#92400e';
+                    c.beginPath(); c.moveTo(-15, -10); c.lineTo(5, -15); c.lineTo(10, 5); c.lineTo(-10, 10);
+                    c.closePath(); c.fill();
+                    c.restore();
+                }
+                else if (this.type === 'dragon_beam') {
+                    c.shadowBlur = 20; c.shadowColor = '#0ea5e9';
+                    c.fillStyle = '#38bdf8';
+                    
+                    c.save();
+                    c.translate(this.position.x + this.width/2, this.position.y + this.height/2);
+                    const angle = Math.atan2(this.velocity.y, this.velocity.x);
+                    c.rotate(angle);
+                    
+                    // 水流のビーム
+                    c.beginPath();
+                    c.ellipse(0, 0, this.width/2, this.height/4, 0, 0, Math.PI*2);
+                    c.fill();
+                    
+                    // 龍の牙/水飛沫
+                    c.fillStyle = '#e0f2fe';
+                    c.beginPath(); c.moveTo(this.width/2, 0); c.lineTo(this.width/4, -15); c.lineTo(this.width/4, 15); c.fill();
+                    c.restore();
+                    
+                    // 残像
+                    this.history.forEach((pos, idx) => {
+                        const alpha = idx / this.history.length;
+                        c.fillStyle = `rgba(14, 165, 233, ${alpha * 0.5})`;
+                        c.beginPath(); c.arc(pos.x + this.width/2, pos.y + this.height/2, this.height/3 * alpha, 0, Math.PI*2); c.fill();
+                    });
+                }
+                else if (this.type === 'flower') {
+                    c.shadowBlur = 15; c.shadowColor = '#f472b6';
+                    
+                    c.save();
+                    c.translate(this.position.x + this.width/2, this.position.y + this.height/2);
+                    c.rotate(this.frames * 0.1);
+                    
+                    // 桜の花びら5枚
+                    for(let i=0; i<5; i++) {
+                        c.rotate((Math.PI * 2) / 5);
+                        c.beginPath();
+                        c.fillStyle = '#fbcfe8'; // 薄ピンク
+                        c.moveTo(0, 0);
+                        c.quadraticCurveTo(15, -15, 20, 0);
+                        c.quadraticCurveTo(15, 15, 0, 0);
+                        c.fill();
+                        
+                        c.strokeStyle = '#be185d'; // 濃いピンクの縁取り
+                        c.lineWidth = 1;
+                        c.stroke();
+                    }
+                    
+                    // 中心
+                    c.fillStyle = '#fde047';
+                    c.beginPath(); c.arc(0, 0, 5, 0, Math.PI*2); c.fill();
+                    c.restore();
+
+                    // 小さな花びらの残像
+                    this.history.forEach((pos, idx) => {
+                        if (idx % 3 !== 0) return;
+                        const alpha = idx / this.history.length;
+                        c.fillStyle = `rgba(244, 114, 182, ${alpha})`;
+                        c.beginPath(); c.arc(pos.x + this.width/2 + Math.sin(idx)*10, pos.y + this.height/2 + Math.cos(idx)*10, 3, 0, Math.PI*2); c.fill();
+                    });
+                }
+
+                c.restore();
+            }
+
+            update() {
+                this.history.push({x: this.position.x, y: this.position.y});
+                if(this.history.length > 10) this.history.shift();
+
+                this.draw();
+                
+                // flower特有の上下運動
+                if (this.type === 'flower') {
+                    this.velocity.y = Math.sin(this.frames * 0.2) * 5;
+                }
+
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                this.frames++;
+
+                if (this.type === 'water' || this.type === 'earth') {
+                    this.velocity.y += gravity; 
+                    if (this.position.y + this.height > groundLevel) this.markedForDeletion = true; 
+                } else if (this.type === 'claw' || this.type === 'pole' || this.type === 'thunder' || this.type === 'wind_blast' || this.type === 'dragon_beam' || this.type === 'flower') {
+                    if (this.type !== 'flower' && this.type !== 'dragon_beam') this.life--;
+                    if(this.life <= 0 && this.type !== 'flower' && this.type !== 'dragon_beam') this.markedForDeletion = true;
+                    
+                    if (this.type === 'pole') { this.position.y = this.owner.position.y + 60; this.position.x = this.facingRight ? this.owner.position.x + 30 : this.owner.position.x - this.width + 30; } 
+                    else if (this.type === 'claw' || this.type === 'wind_blast') { this.position.y = this.owner.position.y + 10; this.position.x = this.facingRight ? this.owner.position.x + 40 : this.owner.position.x - this.width + 20; }
+                }
+
+                if(this.position.x < -1000 || this.position.x > canvas.width + 1000 || this.position.y > canvas.height + 200 || this.position.y < -200) {
+                    this.markedForDeletion = true;
+                }
+            }
+        }
+
+        const projectiles = [];
+
+        class Fighter {
+            constructor({ position, velocity, charId, isPlayer1 }) {
+                this.position = position;
+                this.velocity = velocity;
+                this.isPlayer1 = isPlayer1;
+                this.charId = charId;
+                
+                const data = characterData[charId];
+                this.sprite = data.sprite;
+                this.speed = data.speed;
+                this.jumpPower = data.jump;
+                this.attackDamage = data.attackDamage;
+                this.spCost = data.spCost;
+                this.spType = data.spType;
+
+                this.maxHealth = data.health;
+                this.health = this.maxHealth;
+                this.mana = 100;
+                this.facingRight = isPlayer1;
+                
+                // キャラ固有のサイズ・重力などの適用
+                this.width = data.width || 60;
+                this.height = data.height || 110;
+                this.spriteScale = data.spriteScale || 10;
+                this.gravityScale = data.gravityScale !== undefined ? data.gravityScale : 1;
+
+                this.attackBox = { position: { x: this.position.x, y: this.position.y }, width: (charId === 'wukong') ? 110 : (charId === 'zashiki' ? 50 : 70), height: (charId === 'zashiki' ? 40 : 50) };
+                this.isAttacking = false;
+                this.attackCooldown = false;
+                this.stunTimer = 0; 
+            }
+
+            draw() {
+                if (this.stunTimer > 0 && this.stunTimer % 10 < 5) c.globalAlpha = 0.5;
+                
+                // サイズが違うキャラでも足下が合うように調整
+                const offsetX = (12 * this.spriteScale - this.width) / 2;
+                const offsetY = (12 * this.spriteScale - this.height);
+                drawPixelArt(c, this.sprite, this.position.x - offsetX, this.position.y - offsetY, this.spriteScale, this.facingRight);
+                
+                c.globalAlpha = 1.0;
+
+                if (this.isAttacking) {
+                    c.strokeStyle = 'white'; c.lineWidth = 2;
+                    c.strokeRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
+                }
+            }
+
+            update() {
+                this.draw();
+
+                this.attackBox.position.y = this.position.y + (this.height * 0.3);
+                this.attackBox.position.x = this.facingRight ? this.position.x + this.width : this.position.x - this.attackBox.width;
+
+                if (this.stunTimer > 0) {
+                    this.stunTimer--;
+                    this.velocity.x = 0;
+                }
+
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+
+                if (this.position.y + this.height + this.velocity.y >= groundLevel) {
+                    this.velocity.y = 0;
+                    this.position.y = groundLevel - this.height;
+                } else {
+                    // キャラ固有の重力倍率を適用（青龍はふんわり落ちる）
+                    this.velocity.y += gravity * this.gravityScale;
+                }
+
+                if(this.position.x < 0) this.position.x = 0;
+                if(this.position.x + this.width > canvas.width) this.position.x = canvas.width - this.width;
+
+                if(this.mana < 100) {
+                    this.mana += 0.25;
+                    if(this.mana > 100) this.mana = 100;
+                    this.updateUI();
+                }
+            }
+
+            attack() {
+                if(this.attackCooldown || this.stunTimer > 0) return;
+                this.isAttacking = true;
+                this.attackCooldown = true;
+                setTimeout(() => { this.isAttacking = false; }, 100);
+                setTimeout(() => { this.attackCooldown = false; }, 400);
+            }
+
+            useSuperPower() {
+                if(this.mana >= this.spCost && this.stunTimer <= 0) {
+                    this.mana -= this.spCost;
+                    this.updateUI();
+                    
+                    let projVelX = this.facingRight ? 10 : -10;
+                    let projVelY = 0;
+                    let startX = this.facingRight ? this.position.x + this.width / 2 : this.position.x - 30 + this.width / 2;
+                    
+                    if(this.spType === 'tornado') projVelX = this.facingRight ? 5 : -5;
+                    if(this.spType === 'wave') projVelX = this.facingRight ? 15 : -15;
+                    if(this.spType === 'fireball') projVelX = this.facingRight ? 18 : -18;
+                    if(this.spType === 'flower') projVelX = this.facingRight ? 8 : -8;
+                    if(this.spType === 'dragon_beam') {
+                        projVelX = this.facingRight ? 15 : -15;
+                        // 空中にいる場合は斜め下に発射
+                        projVelY = (this.position.y + this.height < groundLevel - 10) ? 10 : 0;
+                    }
+
+                    projectiles.push(new Projectile({
+                        position: { x: startX, y: this.position.y + (this.height * 0.2) },
+                        velocity: { x: projVelX, y: projVelY },
+                        facingRight: this.facingRight,
+                        type: this.spType,
+                        owner: this
+                    }));
+                }
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                this.updateUI();
+            }
+
+            heal(amount) {
+                if(this.charId === 'vampire') {
+                    this.health += amount;
+                    if(this.health > this.maxHealth) this.health = this.maxHealth;
+                    this.updateUI();
+                }
+            }
+
+            updateUI() {
+                const hpId = this.isPlayer1 ? '#player-hp' : '#enemy-hp';
+                const mpId = this.isPlayer1 ? '#player-mp' : '#enemy-mp';
+                const hpPercent = Math.max(0, (this.health / this.maxHealth) * 100);
+                document.querySelector(hpId).style.width = hpPercent + '%';
+                document.querySelector(mpId).style.width = this.mana + '%';
+            }
+        }
+
+        // --- キー操作イベント ---
+        window.addEventListener('keydown', (event) => {
+            if(gameState !== 'PLAYING') return;
+            
+            switch (event.key.toLowerCase()) {
+                case 'd': keys.d = true; if(player1.stunTimer <= 0) player1.facingRight = true; break;
+                case 'a': keys.a = true; if(player1.stunTimer <= 0) player1.facingRight = false; break;
+                case 'w': if(player1.velocity.y === 0 && player1.stunTimer <= 0) player1.velocity.y = player1.jumpPower; break;
+                case 'g': player1.attack(); break;
+                case 'h': player1.useSuperPower(); break;
+            }
+
+            if (gameMode === 'PVP') {
+                switch (event.key) {
+                    case 'ArrowRight': keys.ArrowRight = true; if(player2.stunTimer <= 0) player2.facingRight = true; break;
+                    case 'ArrowLeft': keys.ArrowLeft = true; if(player2.stunTimer <= 0) player2.facingRight = false; break;
+                    case 'ArrowUp': if(player2.velocity.y === 0 && player2.stunTimer <= 0) player2.velocity.y = player2.jumpPower; break;
+                    case ',': case '、': player2.attack(); break;
+                    case '.': case '。': player2.useSuperPower(); break;
+                }
+            }
+        });
+        window.addEventListener('keyup', (event) => {
+            switch (event.key.toLowerCase()) {
+                case 'd': keys.d = false; break;
+                case 'a': keys.a = false; break;
+            }
+            switch (event.key) {
+                case 'ArrowRight': keys.ArrowRight = false; break;
+                case 'ArrowLeft': keys.ArrowLeft = false; break;
+            }
+        });
+
+        // --- ゲームの進行管理 ---
+        let player1, player2, timer = 60, timerId;
+
+        function initSelectScreen() {
+            const container = document.getElementById('char-list');
+            container.innerHTML = '';
+            Object.keys(characterData).forEach(id => {
+                const char = characterData[id];
+                const card = document.createElement('div');
+                card.className = 'p-3 border-4 border-gray-600 bg-gray-800 rounded cursor-pointer hover:border-yellow-400 transition-all flex flex-col items-center group relative';
+                
+                const thumbCanvasId = `thumb-${id}`;
+                card.innerHTML = `
+                    <div class="bg-gray-700 rounded mb-2 p-1 w-full flex justify-center items-center shadow-inner border-2 border-gray-900 h-20">
+                        <canvas id="${thumbCanvasId}" width="60" height="60"></canvas>
+                    </div>
+                    <h2 class="text-sm font-bold mb-1 text-yellow-300 pixel-text">${char.name}</h2>
+                    <div class="w-full text-[10px] leading-tight text-gray-300 hidden group-hover:block absolute bg-gray-900 border border-gray-500 p-2 z-50 top-full mt-2 rounded shadow-xl w-48 left-1/2 transform -translate-x-1/2">
+                        <p class="mb-1">${char.desc}</p>
+                        <p class="text-green-400">HP: ${char.health} | SPD: ${char.speed}</p>
+                        <p class="text-red-400">ATK: ${char.attackDamage}</p>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    if (selectState === 1) {
+                        p1CharId = id;
+                        if (gameMode === 'CPU') {
+                            const charIds = Object.keys(characterData);
+                            do { p2CharId = charIds[Math.floor(Math.random() * charIds.length)]; } while (p2CharId === p1CharId);
+                            startGame();
+                        } else {
+                            selectState = 2;
+                            document.getElementById('select-title').innerText = "2P キャラクター選択";
+                            document.getElementById('select-title').className = "text-4xl md:text-5xl font-bold mb-6 tracking-widest text-center pixel-text text-blue-400";
+                            card.classList.add('border-yellow-500', 'bg-gray-700');
+                        }
+                    } else if (selectState === 2) {
+                        p2CharId = id;
+                        startGame();
+                    }
+                });
+                container.appendChild(card);
+                
+                // サムネイルの中央に描画
+                const tCtx = document.getElementById(thumbCanvasId).getContext('2d');
+                drawPixelArt(tCtx, char.sprite, 6, 6, 4, true);
+            });
+        }
+
+        function startGame() {
+            gameState = 'PLAYING';
+            document.getElementById('character-select').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+            canvas.focus();
+
+            player1 = new Fighter({ position: { x: 150, y: 0 }, velocity: { x: 0, y: 0 }, charId: p1CharId, isPlayer1: true });
+            player2 = new Fighter({ position: { x: 800, y: 0 }, velocity: { x: 0, y: 0 }, charId: p2CharId, isPlayer1: false });
+
+            document.getElementById('player-name').innerText = characterData[p1CharId].name;
+            document.getElementById('enemy-name').innerText = characterData[p2CharId].name + (gameMode === 'CPU' ? ' (CPU)' : ' (2P)');
+            player1.updateUI();
+            player2.updateUI();
+
+            decreaseTimer();
+        }
+
+        function decreaseTimer() {
+            if (timer > 0 && gameState === 'PLAYING') {
+                timerId = setTimeout(decreaseTimer, 1000);
+                timer--;
+                document.getElementById('timer').innerText = timer;
+            }
+            if (timer === 0) determineWinner();
+        }
+
+        function determineWinner() {
+            clearTimeout(timerId);
+            gameState = 'GAMEOVER';
+            const resultScreen = document.getElementById('result');
+            resultScreen.style.display = 'flex';
+            const resultText = document.getElementById('result-text');
+            
+            if (player1.health === player2.health) {
+                resultText.innerHTML = 'DRAW';
+                resultText.className = 'text-6xl md:text-8xl font-bold text-yellow-400 mb-8 pixel-text';
+            } else if (player1.health > player2.health) { 
+                resultText.innerHTML = '1P WIN!'; 
+                resultText.className = 'text-6xl md:text-8xl font-bold text-red-400 mb-8 pixel-text';
+            } else { 
+                resultText.innerHTML = gameMode === 'CPU' ? 'CPU WIN...' : '2P WIN!'; 
+                resultText.className = 'text-6xl md:text-8xl font-bold text-blue-400 mb-8 pixel-text';
+            }
+        }
+
+        function rectangularCollision({ rect1, rect2 }) {
+            return (
+                rect1.position.x + rect1.width >= rect2.position.x &&
+                rect1.position.x <= rect2.position.x + rect2.width &&
+                rect1.position.y + rect1.height >= rect2.position.y &&
+                rect1.position.y <= rect2.position.y + rect2.height
+            );
+        }
+
+        function enemyAI() {
+            if(gameState !== 'PLAYING') return;
+
+            const distanceX = player1.position.x - player2.position.x;
+            if(player2.stunTimer <= 0) {
+                player2.facingRight = distanceX > 0;
+
+                if (Math.abs(distanceX) > (player2.charId === 'wukong' || player2.charId === 'fujin' ? 120 : 70)) {
+                    player2.velocity.x = player2.facingRight ? player2.speed * 0.5 : -player2.speed * 0.5;
+                } else {
+                    player2.velocity.x = 0;
+                    if(Math.random() < 0.05) player2.attack();
+                }
+                
+                if(Math.random() < 0.01 && player2.mana >= player2.spCost) {
+                    player2.useSuperPower();
+                }
+
+                if(Math.random() < 0.01 && player2.velocity.y === 0) player2.velocity.y = player2.jumpPower;
+            }
+        }
+
+        // --- メインループ ---
+        function animate() {
+            window.requestAnimationFrame(animate);
+
+            c.fillStyle = '#0f172a'; c.fillRect(0, 0, canvas.width, canvas.height);
+            const moonGrad = c.createRadialGradient(800, 150, 10, 800, 150, 60);
+            moonGrad.addColorStop(0, '#fef08a');
+            moonGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+            c.fillStyle = moonGrad; c.beginPath(); c.arc(800, 150, 80, 0, Math.PI*2); c.fill();
+            c.fillStyle = '#fef08a'; c.beginPath(); c.arc(800, 150, 40, 0, Math.PI*2); c.fill();
+            
+            c.fillStyle = '#1e293b'; c.fillRect(0, groundLevel, canvas.width, canvas.height - groundLevel);
+            c.strokeStyle = '#475569'; c.lineWidth = 5; c.beginPath(); c.moveTo(0, groundLevel); c.lineTo(canvas.width, groundLevel); c.stroke();
+
+            if (gameState === 'SELECT' || gameState === 'TITLE') return;
+
+            if (player1) player1.update();
+            if (player2) player2.update();
+
+            // 1P Movement
+            if(gameState === 'PLAYING' && player1.stunTimer <= 0) {
+                player1.velocity.x = 0;
+                if (keys.a && player1.position.x > 0) player1.velocity.x = -player1.speed;
+                else if (keys.d && player1.position.x + player1.width < canvas.width) player1.velocity.x = player1.speed;
+            }
+
+            // 2P or CPU Movement
+            if(gameState === 'PLAYING') {
+                if (gameMode === 'PVP') {
+                    if (player2.stunTimer <= 0) {
+                        player2.velocity.x = 0;
+                        if (keys.ArrowLeft && player2.position.x > 0) player2.velocity.x = -player2.speed;
+                        else if (keys.ArrowRight && player2.position.x + player2.width < canvas.width) player2.velocity.x = player2.speed;
+                    }
+                } else {
+                    enemyAI();
+                }
+            }
+
+            // 飛び道具処理
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.update();
+
+                const target = p.owner.isPlayer1 ? player2 : player1;
+
+                if (!p.hasHit && !p.markedForDeletion && rectangularCollision({
+                    rect1: { position: p.position, width: p.width, height: p.height },
+                    rect2: target
+                })) {
+                    if (p.type === 'thunder') target.stunTimer = p.stunDuration;
+                    
+                    if (p.type !== 'pole' && p.type !== 'claw' && p.type !== 'wind_blast' && p.type !== 'thunder') {
+                        p.markedForDeletion = true;
+                    } else {
+                        p.hasHit = true; 
+                    }
+
+                    if(gameState === 'PLAYING') {
+                        target.takeDamage(p.damage);
+                        p.owner.heal(5); 
+                    }
+                }
+
+                if (p.markedForDeletion) projectiles.splice(i, 1);
+            }
+
+            if(gameState === 'GAMEOVER') return;
+
+            // 近接攻撃の当たり判定
+            if (player1.isAttacking && rectangularCollision({ rect1: player1.attackBox, rect2: player2 })) {
+                player1.isAttacking = false; 
+                player2.takeDamage(player1.attackDamage);
+                player1.heal(3);
+            }
+            if (player2.isAttacking && rectangularCollision({ rect1: player2.attackBox, rect2: player1 })) {
+                player2.isAttacking = false;
+                player1.takeDamage(player2.attackDamage);
+                player2.heal(3);
+            }
+
+            // 勝敗判定
+            if (player2.health <= 0 || player1.health <= 0) determineWinner();
+        }
+
+        // タイトルへ戻る処理
+        function resetToTitle() {
+            gameState = 'TITLE';
+            player1 = null;
+            player2 = null;
+            projectiles.length = 0;
+            timer = 60;
+            
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('character-select').classList.add('hidden');
+            document.getElementById('title-screen').classList.remove('hidden');
+            
+            document.getElementById('player-hp').style.width = '100%';
+            document.getElementById('enemy-hp').style.width = '100%';
+            document.getElementById('player-mp').style.width = '100%';
+            document.getElementById('enemy-mp').style.width = '100%';
+        }
+
+        animate();
+    </script>
+</body>
+</html>
